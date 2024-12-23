@@ -1,5 +1,5 @@
 <h1 align="center">Hi 👋, I'm Martín Arias</h1>
-<h3 align="center">A passionate Web Developer and Producer from Argentina</h3>
+<h3 align="center">Argentina</h3>
 
 - 🔭 I’m currently working on **my skills**
 
