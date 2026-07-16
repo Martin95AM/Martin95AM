@@ -125,7 +125,7 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     confirmSelection() {
-        if (this.selectedIndex === 0 || this.selectedIndex === 1) {
+        if (this.selectedIndex === 0) {
             this.scene.start("WorldScene");
             return;
         }
