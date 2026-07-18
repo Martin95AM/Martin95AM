@@ -4,27 +4,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     constructor(scene, x, y) {
 
-        super(scene, x, y, "__DEFAULT");
-
-        const textureKey = `${scene.sys.settings.key}-player-${Phaser.Math.Between(1, 999999)}`;
-        const graphics = scene.add.graphics({ x: 0, y: 0 });
-        graphics.fillStyle(0x1E88E5, 1);
-        graphics.fillRoundedRect(0, 0, 16, 16, 3);
-        graphics.lineStyle(2, 0xFFFFFF, 1);
-        graphics.strokeRoundedRect(0, 0, 16, 16, 3);
-        graphics.generateTexture(textureKey, 16, 16);
-        graphics.destroy();
-
-        this.setTexture(textureKey);
-        this.setDisplaySize(16, 16);
+        super(scene, x, y, "martin", 0);
 
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
         this.setCollideWorldBounds(true);
-        this.setOrigin(0.5);
-        this.body.setSize(16, 16);
-        this.body.setOffset(0, 0);
+        this.setOrigin(0.5, 0.5);
+        this.body.setSize(20, 32);
+        this.body.setOffset(6, 16);
 
         this.speed = 120;
         this.runSpeed = 180;
@@ -83,15 +71,22 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     animate(vx, vy) {
+        let prefix = '';
+        if (this.texture.key === 'martin_casual') {
+            prefix = 'casual-';
+        } else if (this.texture.key === 'martin_casual_headphones') {
+            prefix = 'headphones-';
+        }
+
         if (vx === 0 && vy === 0) {
-            if (this.anims && this.anims.exists(`idle-${this.direction}`)) {
-                this.anims.play(`idle-${this.direction}`, true);
+            if (this.anims && this.anims.exists(`${prefix}idle-${this.direction}`)) {
+                this.anims.play(`${prefix}idle-${this.direction}`, true);
             }
             return;
         }
 
-        if (this.anims && this.anims.exists(`walk-${this.direction}`)) {
-            this.anims.play(`walk-${this.direction}`, true);
+        if (this.anims && this.anims.exists(`${prefix}walk-${this.direction}`)) {
+            this.anims.play(`${prefix}walk-${this.direction}`, true);
         }
     }
 

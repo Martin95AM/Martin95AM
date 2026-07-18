@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_WIDTH, GAME_HEIGHT } from '../utils/Constants.js';
 
 export default class MenuScene extends Phaser.Scene {
 
@@ -12,8 +13,8 @@ export default class MenuScene extends Phaser.Scene {
 
     create() {
 
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
+        const width = GAME_WIDTH;
+        const height = GAME_HEIGHT;
 
         this.cameras.main.setBackgroundColor("#2B3A67");
 
@@ -94,17 +95,20 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         this.input.keyboard.enabled = true;
+        this.input.keyboard.addCapture([
+            Phaser.Input.Keyboard.KeyCodes.ENTER,
+            Phaser.Input.Keyboard.KeyCodes.SPACE,
+            Phaser.Input.Keyboard.KeyCodes.UP,
+            Phaser.Input.Keyboard.KeyCodes.DOWN,
+            Phaser.Input.Keyboard.KeyCodes.W,
+            Phaser.Input.Keyboard.KeyCodes.S
+        ]);
         this.input.keyboard.on("keydown-UP", this.moveSelectionUp, this);
         this.input.keyboard.on("keydown-W", this.moveSelectionUp, this);
         this.input.keyboard.on("keydown-DOWN", this.moveSelectionDown, this);
         this.input.keyboard.on("keydown-S", this.moveSelectionDown, this);
         this.input.keyboard.on("keydown-ENTER", this.confirmSelection, this);
         this.input.keyboard.on("keydown-SPACE", this.confirmSelection, this);
-
-        this.boundHandleGlobalKeyDown = this.handleGlobalKeyDown.bind(this);
-        window.addEventListener("keydown", this.boundHandleGlobalKeyDown, true);
-        this.events.once("shutdown", this.removeGlobalKeyDown, this);
-        this.events.once("destroy", this.removeGlobalKeyDown, this);
 
         this.updateSelection();
 
@@ -131,22 +135,6 @@ export default class MenuScene extends Phaser.Scene {
         }
 
         this.cameras.main.shake(150, 0.003);
-    }
-
-    handleGlobalKeyDown(event) {
-        const key = event.key;
-
-        if (key === "Enter" || key === " " || key === "Spacebar") {
-            event.preventDefault();
-            event.stopPropagation();
-            this.confirmSelection();
-        }
-    }
-
-    removeGlobalKeyDown() {
-        if (this.boundHandleGlobalKeyDown) {
-            window.removeEventListener("keydown", this.boundHandleGlobalKeyDown, true);
-        }
     }
 
     updateSelection() {
