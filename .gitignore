@@ -4,3 +4,7 @@ node_modules/
 **/target/
 .DS_Store
 .vscode/
+.idea/
+frontend/node_modules/
+frontend/dist/
+backend/target/
