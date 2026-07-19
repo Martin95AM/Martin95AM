@@ -52,6 +52,10 @@ export default class StudioScene extends Phaser.Scene {
             .setStrokeStyle(1, 0xffffff)
             .setVisible(false)
             .setDepth(10000);
+        this.promptBox.setInteractive({ useHandCursor: true });
+        this.promptBox.on('pointerdown', () => {
+            this.handleInteraction();
+        });
         this.promptText = this.add.text(320, 280, "", {
             fontSize: "9px",
             color: "#ffffff",
@@ -120,6 +124,7 @@ export default class StudioScene extends Phaser.Scene {
         // Check distance to spots
         const distToBraian = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+        const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 180);
 
         let activePrompt = null;
         let promptX = 0;
@@ -129,6 +134,10 @@ export default class StudioScene extends Phaser.Scene {
             activePrompt = "Pulsa E para hablar con Braian";
             promptX = this.npcs[0].x;
             promptY = this.npcs[0].y - 35;
+        } else if (distToComputer < 50 && !this.dialogSystem.visible) {
+            activePrompt = "Pulsa L para usar Auriculares / Spotify";
+            promptX = 320;
+            promptY = 180 - 35;
         } else if (distToTorii < 80 && !this.dialogSystem.visible && !this.toriiOpened) {
             activePrompt = "Aprieta Q para pasar al otro Mapa";
             promptX = this.toriiGate.x;
@@ -154,45 +163,59 @@ export default class StudioScene extends Phaser.Scene {
 
         // Handle E Key Interaction (Talk to Braian)
         if (Phaser.Input.Keyboard.JustDown(this.eKey)) {
-            if (distToBraian < 50) {
-                this.dialogSystem.showDialog(this.npcs[0]);
-            }
+            this.handleInteraction();
         }
 
         // Handle L Key Interaction (Toggle Headphones & Spotify)
         if (Phaser.Input.Keyboard.JustDown(this.lKey)) {
-            this.hasHeadphones = !this.hasHeadphones;
-            const spotifyDiv = document.getElementById('spotify-player');
-            if (this.hasHeadphones) {
-                this.player.setTexture('martin_casual_headphones');
-                this.spotifyUI.setVisible(true);
-                if (spotifyDiv) spotifyDiv.style.display = 'block'; // Show real Spotify player!
-                this.showFloatingBubble(this.player.x, this.player.y, "🎧 Escuchando Dojo Beats...");
-            } else {
-                this.player.setTexture('martin_casual');
-                this.spotifyUI.setVisible(false);
-                if (spotifyDiv) spotifyDiv.style.display = 'none'; // Hide real Spotify player!
-                this.showFloatingBubble(this.player.x, this.player.y, "Auriculares quitados.");
-            }
+            this.handleInteraction();
         }
 
         // Handle Q Key Interaction (Torii Gate Exit)
         if (Phaser.Input.Keyboard.JustDown(this.qKey)) {
-            if (distToTorii < 80 && !this.toriiOpened) {
-                this.toriiOpened = true;
-                this.toriiGate.play('torii-open');
-                this.physics.world.disableBody(this.toriiGate.body); // disable collision so player can walk through!
-                
-                // Hide real Spotify player on exit!
-                const spotifyDiv = document.getElementById('spotify-player');
-                if (spotifyDiv) spotifyDiv.style.display = 'none';
-                
-                // Camera fade out and transition back to WorldScene after 1.5 seconds
-                this.cameras.main.fadeOut(1000, 0, 0, 0);
-                this.time.delayedCall(1500, () => {
-                    this.scene.start('WorldScene');
-                });
-            }
+            this.handleInteraction();
+        }
+    }
+
+    handleInteraction() {
+        const distToBraian = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
+        const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+        const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 180);
+
+        if (distToBraian < 50) {
+            this.dialogSystem.showDialog(this.npcs[0]);
+        } else if (distToComputer < 50) {
+            this.toggleSpotify();
+        } else if (distToTorii < 80 && !this.toriiOpened) {
+            this.toriiOpened = true;
+            this.toriiGate.play('torii-open');
+            this.physics.world.disableBody(this.toriiGate.body); // disable collision so player can walk through!
+            
+            // Hide real Spotify player on exit!
+            const spotifyDiv = document.getElementById('spotify-player');
+            if (spotifyDiv) spotifyDiv.style.display = 'none';
+            
+            // Camera fade out and transition back to WorldScene after 1.5 seconds
+            this.cameras.main.fadeOut(1000, 0, 0, 0);
+            this.time.delayedCall(1500, () => {
+                this.scene.start('WorldScene');
+            });
+        }
+    }
+
+    toggleSpotify() {
+        this.hasHeadphones = !this.hasHeadphones;
+        const spotifyDiv = document.getElementById('spotify-player');
+        if (this.hasHeadphones) {
+            this.player.setTexture('martin_casual_headphones');
+            this.spotifyUI.setVisible(true);
+            if (spotifyDiv) spotifyDiv.style.display = 'block'; // Show real Spotify player!
+            this.showFloatingBubble(this.player.x, this.player.y, "🎧 Escuchando Dojo Beats...");
+        } else {
+            this.player.setTexture('martin_casual');
+            this.spotifyUI.setVisible(false);
+            if (spotifyDiv) spotifyDiv.style.display = 'none'; // Hide real Spotify player!
+            this.showFloatingBubble(this.player.x, this.player.y, "Auriculares quitados.");
         }
     }
 

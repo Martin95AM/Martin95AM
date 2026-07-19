@@ -79,6 +79,10 @@ export default class WorldScene extends Phaser.Scene {
             .setStrokeStyle(1, 0xffffff)
             .setVisible(false)
             .setDepth(10000);
+        this.promptBox.setInteractive({ useHandCursor: true });
+        this.promptBox.on('pointerdown', () => {
+            this.handleInteraction();
+        });
         this.promptText = this.add.text(320, 280, "Pulsa E para hablar con Elias", {
             fontSize: "9px",
             color: "#ffffff",
@@ -197,31 +201,39 @@ export default class WorldScene extends Phaser.Scene {
 
         // Handle E Key Interaction
         if (Phaser.Input.Keyboard.JustDown(this.eKey)) {
-            if (distToElias < 50) {
-                this.dialogSystem.showDialog(this.npcs[0]);
-                this.eliasState = 'talked';
-            } else if (distToRack < 50) {
-                this.dialogSystem.showDialog({
-                    dialogLines: ["Armas de Karate Do: Bo (Baston), Sai, Tonfa, Nunchaku."],
-                    x: this.weaponRack.x,
-                    y: this.weaponRack.y + 15
-                });
-            }
+            this.handleInteraction();
         }
 
         // Handle Q Key Interaction (Torii Gate Exit)
         if (Phaser.Input.Keyboard.JustDown(this.qKey)) {
-            if (distToTorii < 80 && !this.toriiOpened) {
-                this.toriiOpened = true;
-                this.toriiGate.play('torii-open');
-                this.physics.world.disableBody(this.toriiGate.body); // disable collision so player can walk through!
-                
-                // Camera fade out and transition to StudioScene after 1.5 seconds
-                this.cameras.main.fadeOut(1000, 0, 0, 0);
-                this.time.delayedCall(1500, () => {
-                    this.scene.start('StudioScene');
-                });
-            }
+            this.handleInteraction();
+        }
+    }
+
+    handleInteraction() {
+        const distToElias = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
+        const distToRack = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.weaponRack.x, this.weaponRack.y);
+        const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+
+        if (distToElias < 50) {
+            this.dialogSystem.showDialog(this.npcs[0]);
+            this.eliasState = 'talked';
+        } else if (distToRack < 50) {
+            this.dialogSystem.showDialog({
+                dialogLines: ["Armas de Karate Do: Bo (Baston), Sai, Tonfa, Nunchaku."],
+                x: this.weaponRack.x,
+                y: this.weaponRack.y + 15
+            });
+        } else if (distToTorii < 80 && !this.toriiOpened) {
+            this.toriiOpened = true;
+            this.toriiGate.play('torii-open');
+            this.physics.world.disableBody(this.toriiGate.body); // disable collision so player can walk through!
+            
+            // Camera fade out and transition to StudioScene after 1.5 seconds
+            this.cameras.main.fadeOut(1000, 0, 0, 0);
+            this.time.delayedCall(1500, () => {
+                this.scene.start('StudioScene');
+            });
         }
     }
 
