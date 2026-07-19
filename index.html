@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+    <style>
+      #spotify-player {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        width: 300px;
+        height: 80px;
+        display: none;
+        z-index: 10000;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      }
+      #spotify-player .close-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: #1db954;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      }
+      #spotify-player iframe {
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    
+    <!-- Real Spotify Playlist Embed (Hidden by default) -->
+    <div id="spotify-player">
+      <!-- Close Button (X) to return focus to the game -->
+      <button class="close-btn">X</button>
+      <iframe src="https://open.spotify.com/embed/playlist/405Xp3Q344R0dATZ2LfnlK?utm_source=generator" width="100%" height="100%" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    </div>
+
+    <script>
+      function closeSpotify() {
+        const player = document.getElementById('spotify-player');
+        if (player) player.style.display = 'none';
+        
+        // Stop the music by resetting the iframe src
+        const iframe = document.querySelector('#spotify-player iframe');
+        if (iframe) {
+          const currentSrc = iframe.src;
+          iframe.src = ''; // Clear src to stop music
+          iframe.src = currentSrc; // Restore src so it's ready for next time (paused)
+        }
+        
+        // Return focus to the game canvas
+        const canvas = document.querySelector('canvas');
+        if (canvas) canvas.focus();
+        
+        // Dispatch event to notify Phaser
+        window.dispatchEvent(new CustomEvent('close-headphones'));
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const closeBtn = document.querySelector('#spotify-player .close-btn');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', closeSpotify);
+        }
+      });
+    </script>
+
+    <script type="module" src="/frontend/src/main.js"></script>
+  </body>
+</html>
