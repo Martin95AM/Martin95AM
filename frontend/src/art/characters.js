@@ -10,11 +10,21 @@ const palettes = {
     technician: { cloth: '#237a7c', light: '#4caba7', shade: '#164d59', deep: '#142e3c', hair: '#202331', skin: '#ac7558', skinLight: '#d49d75', accent: '#f3a14c' }
 };
 
+const studentPalettes = {
+    yellow: { cloth: '#e8ece9', light: '#fffdf3', shade: '#91a1aa', deep: '#455467', hair: '#49352f', skin: '#d49770', skinLight: '#efba8f', accent: '#e1bd34' },
+    orange: { cloth: '#e4e9e8', light: '#fffdf3', shade: '#899ca8', deep: '#405064', hair: '#252938', skin: '#b97959', skinLight: '#dca17b', accent: '#df6d2e' },
+    green: { cloth: '#e6ebe7', light: '#fffdf3', shade: '#8da09f', deep: '#43545e', hair: '#1d2028', skin: '#895840', skinLight: '#b27656', accent: '#329557' },
+    blue: { cloth: '#e7ebed', light: '#fffdf3', shade: '#91a1ad', deep: '#435267', hair: '#985b36', skin: '#d9a078', skinLight: '#f0bd91', accent: '#356fbe' },
+    brown: { cloth: '#e3e8e6', light: '#fffdf3', shade: '#87999f', deep: '#3f4d5b', hair: '#30262a', skin: '#6f493b', skinLight: '#976753', accent: '#76482d' }
+};
+
 export function drawCharacter(ctx, character, direction = 'down', pose = 'idle', step = 0) {
     const casual = character.includes('casual');
     const technician = character === 'braian_casual';
     const sensei = character === 'guard';
-    const p = technician ? palettes.technician : sensei ? palettes.guard : palettes.martin;
+    const studentColor = character.startsWith('student_') ? character.replace('student_', '') : null;
+    const p = studentColor ? studentPalettes[studentColor]
+        : technician ? palettes.technician : sensei ? palettes.guard : palettes.martin;
     const clothed = casual || technician;
     const side = direction === 'left' || direction === 'right';
     const back = direction === 'up';
@@ -171,6 +181,23 @@ export function createCharacterTextures(scene) {
             drawCharacter(texture.context,key,['down','left','right','up'][Math.floor(frame / 4)] || 'left',frame >= 16 ? 'pushup' : frame % 4 === 0 ? 'idle' : 'walk',frame % 4);
             texture.context.restore();
             texture.add(frame,0,x,y,FRAME_WIDTH,FRAME_HEIGHT);
+        }
+        texture.refresh();
+    }
+
+    // Students use the same high-resolution renderer, proportions and lighting as
+    // Martín and Sensei. Their four-frame sheet keeps the existing scene API:
+    // two calm stance frames followed by two push-up frames.
+    for (const color of Object.keys(studentPalettes)) {
+        const key = `student_${color}`;
+        if (scene.textures.exists(key)) scene.textures.remove(key);
+        const texture = scene.textures.createCanvas(key, FRAME_WIDTH * 4, FRAME_HEIGHT);
+        for (let frame = 0; frame < 4; frame++) {
+            texture.context.save();
+            texture.context.translate(frame * FRAME_WIDTH, frame === 1 ? -1 : 0);
+            drawCharacter(texture.context, key, 'left', frame < 2 ? 'idle' : 'pushup', frame);
+            texture.context.restore();
+            texture.add(frame, 0, frame * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
         }
         texture.refresh();
     }

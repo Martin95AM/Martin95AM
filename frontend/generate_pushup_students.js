@@ -71,17 +71,19 @@ function createPng(width, height, pixelFunc) {
 
 // Palette and variants. Keeping the art code here makes every generated sprite
 // reproducible instead of relying on hand-edited binary PNGs.
-const SUIT_BASE = [245, 245, 250, 255];
-const SUIT_SHADOW = [185, 195, 210, 255];
-const SUIT_OUTLINE = [110, 125, 145, 255];
+const SUIT_BASE = [236, 239, 235, 255];
+const SUIT_LIGHT = [255, 255, 248, 255];
+const SUIT_SHADOW = [139, 158, 165, 255];
+const SUIT_DEEP = [66, 83, 96, 255];
+const SUIT_OUTLINE = [28, 38, 53, 255];
 const TRANSPARENT = [0, 0, 0, 0];
 
 const students = {
-    yellow: { belt: [235, 210, 40, 255], skin: [255, 219, 172, 255], shade: [224, 172, 135, 255], outline: [141, 85, 36, 255], hair: [83, 47, 30, 255], hairOutline: [43, 22, 15, 255], fringe: 0 },
-    orange: { belt: [235, 120, 30, 255], skin: [224, 170, 126, 255], shade: [181, 121, 86, 255], outline: [112, 69, 43, 255], hair: [33, 35, 48, 255], hairOutline: [17, 18, 28, 255], fringe: 2 },
-    green: { belt: [40, 160, 60, 255], skin: [137, 84, 57, 255], shade: [98, 54, 39, 255], outline: [68, 39, 27, 255], hair: [25, 19, 18, 255], hairOutline: [12, 10, 10, 255], fringe: 1 },
-    blue: { belt: [30, 100, 210, 255], skin: [247, 202, 162, 255], shade: [211, 153, 118, 255], outline: [125, 79, 53, 255], hair: [184, 107, 49, 255], hairOutline: [96, 49, 24, 255], fringe: 3 },
-    brown: { belt: [110, 65, 30, 255], skin: [105, 64, 46, 255], shade: [74, 42, 32, 255], outline: [52, 30, 23, 255], hair: [45, 29, 23, 255], hairOutline: [23, 15, 13, 255], fringe: 0 }
+    yellow: { belt: [233, 196, 42, 255], skin: [237, 180, 139, 255], shade: [185, 121, 88, 255], outline: [84, 53, 45, 255], hair: [67, 43, 36, 255], hairOutline: [27, 30, 41, 255], fringe: 0 },
+    orange: { belt: [225, 105, 37, 255], skin: [202, 137, 101, 255], shade: [151, 88, 67, 255], outline: [72, 48, 43, 255], hair: [29, 32, 45, 255], hairOutline: [20, 27, 39, 255], fringe: 2 },
+    green: { belt: [43, 149, 76, 255], skin: [126, 77, 58, 255], shade: [83, 47, 39, 255], outline: [49, 36, 38, 255], hair: [19, 23, 30, 255], hairOutline: [16, 23, 34, 255], fringe: 1 },
+    blue: { belt: [38, 105, 194, 255], skin: [241, 190, 151, 255], shade: [183, 124, 94, 255], outline: [91, 55, 49, 255], hair: [151, 78, 44, 255], hairOutline: [44, 37, 40, 255], fringe: 3 },
+    brown: { belt: [109, 65, 37, 255], skin: [100, 61, 47, 255], shade: [66, 39, 35, 255], outline: [43, 32, 37, 255], hair: [37, 27, 28, 255], hairOutline: [19, 25, 35, 255], fringe: 0 }
 };
 
 function getSeizaPixel(lx, ly, isBreathing, style) {
@@ -137,7 +139,11 @@ function getSeizaPixel(lx, ly, isBreathing, style) {
     const torsoYEnd = 42 - shift;
     if (ly >= torsoYStart && ly <= torsoYEnd && lx >= 9 && lx <= 22) {
         if (lx === 9 || lx === 22 || ly === torsoYStart || ly === torsoYEnd) return SUIT_OUTLINE;
+        // Gi overlap and sleeve give the compact sprite the same articulated feel
+        // as the main cast instead of a flat white block.
+        if ((lx === 13 && ly >= torsoYStart + 2) || (lx === 16 && ly >= torsoYStart + 4)) return SUIT_DEEP;
         if (lx >= 17 && ly >= torsoYStart + 2 && ly <= torsoYStart + 8) return SUIT_SHADOW;
+        if (lx === 10 && ly >= torsoYStart + 3) return SUIT_LIGHT;
         return SUIT_BASE;
     }
 
@@ -145,6 +151,7 @@ function getSeizaPixel(lx, ly, isBreathing, style) {
     if (ly >= 43 && ly <= 47 && lx >= 6 && lx <= 25) {
         if (lx === 6 || lx === 25 || ly === 47 || ly === 43) return SUIT_OUTLINE;
         if (lx >= 16) return SUIT_SHADOW;
+        if (ly === 44) return SUIT_LIGHT;
         return SUIT_BASE;
     }
 
@@ -181,7 +188,7 @@ function getPushupPixel(lx, ly, isUp, style) {
         if (ly >= 34 && ly <= 47 && lx >= 10 && lx <= 13) {
             if (ly >= 45) return style.skin; // hands on floor
             if (lx === 10 || lx === 13) return SUIT_OUTLINE;
-            return SUIT_BASE;
+            return lx === 11 ? SUIT_LIGHT : SUIT_BASE;
         }
     } else {
         // Arms bent (y: 40 to 47, x: 10 to 15)
@@ -201,7 +208,8 @@ function getPushupPixel(lx, ly, isUp, style) {
     if (ly >= bodyY && ly <= bodyY + 8 && lx >= 12 && lx <= 28) {
         if (lx === 12 || lx === 28 || ly === bodyY || ly === bodyY + 8) return SUIT_OUTLINE;
         if (ly >= bodyY + 5) return SUIT_SHADOW;
-        return SUIT_BASE;
+        if (lx === 16 || lx === 17) return SUIT_DEEP;
+        return ly === bodyY + 1 ? SUIT_LIGHT : SUIT_BASE;
     }
 
     // --- FEET (Touching floor at the back) ---

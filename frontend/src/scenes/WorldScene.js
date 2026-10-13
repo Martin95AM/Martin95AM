@@ -6,6 +6,7 @@ import DialogSystem from "../npc/DialogSystem.js";
 import Inventory from "../ui/Inventory.js";
 import GameManager from "../managers/GameManager.js";
 import DojoCombat from "../combat/DojoCombat.js";
+import { ART_SCALE } from "../art/characters.js";
 
 export default class WorldScene extends Phaser.Scene {
 
@@ -19,6 +20,7 @@ export default class WorldScene extends Phaser.Scene {
 
         // Render the beautiful 16-bit Dojo background
         this.add.image(0, 0, 'dojo').setOrigin(0, 0);
+        this.createDojoAtmosphere();
 
         this.player = new Player(this, 320, 380);
 
@@ -45,9 +47,13 @@ export default class WorldScene extends Phaser.Scene {
             this.physics.add.collider(this.player, npc);
         });
 
-        // Karate Do Weapon Rack (Interactive Spot 1) - Moved further left to x = 60
+        // Interactive arsenal: the painted rack gets a physical interaction zone.
         this.weaponRack = this.physics.add.staticSprite(60, 200, 'weapon_rack');
         this.physics.add.collider(this.player, this.weaponRack);
+        this.equippedWeapon = null;
+        this.weaponMenuOpen = false;
+        this.weaponGraphics = this.add.graphics().setDepth(1000);
+        this.createWeaponMenu();
 
         // Torii Gate Exit Door (Interactive Spot 2) - Lowered slightly to y = 65
         this.toriiGate = this.physics.add.staticSprite(320, 65, 'torii', 0);
@@ -65,7 +71,8 @@ export default class WorldScene extends Phaser.Scene {
         ];
         this.studentShadows = studentSetup.map(({ x, y }) => this.add.ellipse(x, y + 21, 29, 7, 0x182233, 0.24)
             .setDepth(y - 1));
-        this.students = studentSetup.map(({ x, y, key }) => this.physics.add.staticSprite(x, y, key));
+        this.students = studentSetup.map(({ x, y, key }) => this.physics.add.staticSprite(x, y, key)
+            .setScale(ART_SCALE).refreshBody());
 
         this.students.forEach(student => {
             this.physics.add.collider(this.player, student);
@@ -97,6 +104,13 @@ export default class WorldScene extends Phaser.Scene {
         this.eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
         this.qKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
         this.fKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+        this.escapeKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+        this.weaponKeys = this.input.keyboard.addKeys({
+            bo: Phaser.Input.Keyboard.KeyCodes.ONE,
+            sai: Phaser.Input.Keyboard.KeyCodes.TWO,
+            tonfa: Phaser.Input.Keyboard.KeyCodes.THREE,
+            nunchaku: Phaser.Input.Keyboard.KeyCodes.FOUR
+        });
 
         this.eliasState = 'idle'; // 'idle', 'talked', 'walking_away', 'training'
         this.isDoingPushups = false;
@@ -105,7 +119,10 @@ export default class WorldScene extends Phaser.Scene {
 
     update() {
         this.combat.update();
-        if (this.combat.playerBusy || this.toriiOpened) {
+        if (this.weaponMenuOpen) {
+            this.player.setVelocity(0, 0);
+            this.handleWeaponSelection();
+        } else if (this.combat.playerBusy || this.toriiOpened) {
             // Combat controls attack recovery and the brief hit recoil.
         } else if (this.isDoingPushups) {
             this.player.setVelocity(0, 0);
@@ -121,6 +138,7 @@ export default class WorldScene extends Phaser.Scene {
         this.toriiGate.setDepth(this.toriiGate.y);
         this.students.forEach(student => student.setDepth(student.y));
         this.studentShadows.forEach((shadow, index) => shadow.setDepth(this.students[index].y - 1));
+        this.drawEquippedWeapon();
 
         // Check distance to spots
         const distToElias = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
@@ -135,8 +153,10 @@ export default class WorldScene extends Phaser.Scene {
             activePrompt = "Pulsa E para hablar con Sensei";
             promptX = this.npcs[0].x;
             promptY = this.npcs[0].y - 35;
-        } else if (distToRack < 50 && !this.dialogSystem.visible) {
-            activePrompt = "Pulsa E para ver armas";
+        } else if (distToRack < 62 && !this.dialogSystem.visible && !this.weaponMenuOpen) {
+            activePrompt = this.equippedWeapon
+                ? `E: arsenal · Equipada: ${this.equippedWeapon.name}`
+                : "Pulsa E para abrir el arsenal";
             promptX = this.weaponRack.x;
             promptY = this.weaponRack.y - 30;
         } else if (distToTorii < 80 && !this.dialogSystem.visible && !this.toriiOpened) {
@@ -163,7 +183,7 @@ export default class WorldScene extends Phaser.Scene {
         }
 
         // F preserves push-ups; P and O are now combat controls.
-        if (Phaser.Input.Keyboard.JustDown(this.fKey) && !this.combat.playerBusy && !this.toriiOpened) {
+        if (Phaser.Input.Keyboard.JustDown(this.fKey) && !this.combat.playerBusy && !this.toriiOpened && !this.weaponMenuOpen) {
             this.isDoingPushups = !this.isDoingPushups;
             if (this.isDoingPushups) {
                 this.player.setVelocity(0, 0);
@@ -210,7 +230,7 @@ export default class WorldScene extends Phaser.Scene {
         }
 
         // Handle E Key Interaction
-        if (Phaser.Input.Keyboard.JustDown(this.eKey)) {
+        if (Phaser.Input.Keyboard.JustDown(this.eKey) && !this.weaponMenuOpen) {
             this.handleInteraction();
         }
 
@@ -229,12 +249,8 @@ export default class WorldScene extends Phaser.Scene {
         if (distToElias < 50) {
             this.dialogSystem.showDialog(this.npcs[0]);
             this.eliasState = 'talked';
-        } else if (distToRack < 50) {
-            this.dialogSystem.showDialog({
-                dialogLines: ["Armas de Karate Do: Bo (Baston), Sai, Tonfa, Nunchaku."],
-                x: this.weaponRack.x,
-                y: this.weaponRack.y + 15
-            });
+        } else if (distToRack < 62) {
+            this.openWeaponMenu();
         } else if (distToTorii < 80 && !this.toriiOpened) {
             this.combat.stop();
             this.toriiOpened = true;
@@ -247,6 +263,95 @@ export default class WorldScene extends Phaser.Scene {
                 this.scene.start('StudioScene');
             });
         }
+    }
+
+    createDojoAtmosphere() {
+        const plaque = this.add.rectangle(320, 104, 106, 17, 0x25382f)
+            .setStrokeStyle(1, 0xd2ae72).setDepth(2);
+        this.add.text(320, 104, 'DOJO MARTIN · 稽古', {
+            fontSize: '8px', color: '#ffe1a3', fontFamily: 'monospace'
+        }).setOrigin(0.5).setDepth(3);
+        const lights = [64, 582].map(x => this.add.circle(x, 49, 15, 0xffd47a, 0.09).setDepth(2));
+        this.tweens.add({ targets: lights, alpha: 0.17, scale: 1.12, duration: 1300, yoyo: true, repeat: -1 });
+        plaque.setAlpha(0.96);
+    }
+
+    createWeaponMenu() {
+        this.weaponMenu = this.add.container(150, 205).setVisible(false).setDepth(25000);
+        const shadow = this.add.rectangle(3, 4, 188, 106, 0x081018, 0.45);
+        const bg = this.add.rectangle(0, 0, 188, 106, 0x111827, 0.97)
+            .setStrokeStyle(2, 0xd2ae72);
+        const title = this.add.text(0, -40, 'ARSENAL DEL DOJO', {
+            fontSize: '10px', color: '#ffe1a3', fontFamily: 'monospace', fontStyle: 'bold'
+        }).setOrigin(0.5);
+        const options = this.add.text(-78, -23,
+            '1  BO         alcance largo\n2  SAI        rápido y preciso\n3  TONFA      defensa sólida\n4  NUNCHAKU   combo veloz', {
+                fontSize: '8px', color: '#e7edf2', fontFamily: 'monospace', lineSpacing: 5
+            });
+        const hint = this.add.text(0, 42, '1–4 equipar  ·  ESC cerrar', {
+            fontSize: '7px', color: '#9dafc3', fontFamily: 'monospace'
+        }).setOrigin(0.5);
+        this.weaponMenu.add([shadow, bg, title, options, hint]);
+    }
+
+    openWeaponMenu() {
+        this.weaponMenuOpen = true;
+        this.player.setVelocity(0, 0);
+        this.weaponMenu.setVisible(true);
+        this.promptBox.setVisible(false);
+        this.promptText.setVisible(false);
+        this.combat.updateHud('Elegí un arma del arsenal con 1, 2, 3 o 4.');
+    }
+
+    closeWeaponMenu() {
+        this.weaponMenuOpen = false;
+        this.weaponMenu.setVisible(false);
+    }
+
+    handleWeaponSelection() {
+        const arsenal = {
+            bo: { name: 'Bo', color: 0xb9783d, reach: 76, cooldown: 500, windup: 150, duration: 400 },
+            sai: { name: 'Sai', color: 0xd7e0e5, reach: 50, cooldown: 330, windup: 95, duration: 280 },
+            tonfa: { name: 'Tonfa', color: 0x704225, reach: 46, cooldown: 390, windup: 110, duration: 320 },
+            nunchaku: { name: 'Nunchaku', color: 0xc88b43, reach: 61, cooldown: 360, windup: 120, duration: 330 }
+        };
+        for (const [key, keyObject] of Object.entries(this.weaponKeys)) {
+            if (!Phaser.Input.Keyboard.JustDown(keyObject)) continue;
+            this.equippedWeapon = { key, ...arsenal[key] };
+            this.closeWeaponMenu();
+            this.showFloatingBubble(this.player.x, this.player.y, `${this.equippedWeapon.name} equipada · P para usar`);
+            this.combat.updateHud(`${this.equippedWeapon.name} equipada. P: arma · O: patada.`);
+            return;
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.escapeKey)) this.closeWeaponMenu();
+    }
+
+    drawEquippedWeapon() {
+        const g = this.weaponGraphics.clear();
+        if (!this.equippedWeapon || this.toriiOpened) return;
+        const { x, y, direction } = this.player;
+        const vector = direction === 'left' ? [-1, 0] : direction === 'right' ? [1, 0]
+            : direction === 'up' ? [0, -1] : [0, 1];
+        const attacking = this.combat.actions.get(this.player)?.type === 'punch';
+        const length = this.equippedWeapon.key === 'bo' ? 27 : this.equippedWeapon.key === 'nunchaku' ? 22 : 14;
+        const extension = attacking ? 1.65 : 1;
+        const hx = x + vector[0] * 8, hy = y - 3 + vector[1] * 8;
+        const ex = hx + vector[0] * length * extension + (vector[0] === 0 ? length * 0.55 : 0);
+        const ey = hy + vector[1] * length * extension + (vector[1] === 0 ? -length * 0.55 : 0);
+        g.lineStyle(this.equippedWeapon.key === 'bo' ? 3 : 2, this.equippedWeapon.color, 1)
+            .beginPath().moveTo(hx, hy).lineTo(ex, ey).strokePath();
+        if (this.equippedWeapon.key === 'sai') {
+            g.lineStyle(1, 0xf1f5f9, 1).beginPath()
+                .moveTo(hx - 3, hy - 2).lineTo(ex - 3, ey - 2)
+                .moveTo(hx + 3, hy + 2).lineTo(ex + 3, ey + 2).strokePath();
+        } else if (this.equippedWeapon.key === 'tonfa') {
+            g.lineStyle(2, 0x4a2c20, 1).beginPath()
+                .moveTo(hx, hy).lineTo(hx - vector[1] * 7, hy + vector[0] * 7).strokePath();
+        } else if (this.equippedWeapon.key === 'nunchaku') {
+            g.lineStyle(1, 0xd6d3d1, 1).beginPath().moveTo(ex, ey).lineTo(ex + 5, ey + 5).strokePath();
+            g.lineStyle(3, 0x8b5a2b, 1).beginPath().moveTo(ex + 5, ey + 5).lineTo(ex + 11, ey + 11).strokePath();
+        }
+        g.setDepth(y + 3);
     }
 
     interactWithNearestNPC() {

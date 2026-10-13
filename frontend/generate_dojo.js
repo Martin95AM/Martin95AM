@@ -70,18 +70,18 @@ function createPng(width, height, pixelFunc) {
 }
 
 // Colors
-const WALL_BASE = [235, 225, 200, 255];
-const WALL_WOOD = [110, 55, 25, 255];
-const WALL_WOOD_LIGHT = [140, 75, 35, 255];
-const WOOD_FLOOR = [150, 80, 40, 255];
-const WOOD_FLOOR_DARK = [110, 55, 25, 255];
-const WOOD_FLOOR_LIGHT = [175, 100, 50, 255];
+const WALL_BASE = [224, 213, 188, 255];
+const WALL_WOOD = [91, 48, 29, 255];
+const WALL_WOOD_LIGHT = [151, 88, 48, 255];
+const WOOD_FLOOR = [132, 72, 43, 255];
+const WOOD_FLOOR_DARK = [77, 40, 27, 255];
+const WOOD_FLOOR_LIGHT = [178, 107, 62, 255];
 
-const TATAMI_BLACK = [35, 35, 40, 255];
-const TATAMI_BLACK_SHADOW = [20, 20, 25, 255];
-const TATAMI_RED = [195, 35, 35, 255];
-const TATAMI_RED_SHADOW = [150, 25, 25, 255];
-const TATAMI_RED_LIGHT = [220, 60, 60, 255];
+const TATAMI_BLACK = [36, 54, 51, 255];
+const TATAMI_BLACK_SHADOW = [20, 34, 34, 255];
+const TATAMI_RED = [119, 151, 104, 255];
+const TATAMI_RED_SHADOW = [80, 112, 76, 255];
+const TATAMI_RED_LIGHT = [157, 181, 124, 255];
 
 const SCROLL_BG = [245, 240, 215, 255];
 const SCROLL_BORDER = [80, 40, 20, 255];
@@ -91,6 +91,11 @@ const METAL = [180, 185, 190, 255];
 const GOLD = [215, 165, 40, 255];
 
 function getDojoPixel(x, y) {
+    // A recessed dark timber ceiling gives the room a clear sense of height.
+    if (y < 14) {
+        if (y === 0 || y === 13 || x % 80 < 5) return [55, 30, 23, 255];
+        return [78, 42, 29, 255];
+    }
     // --- WOODEN PILLARS (Left: 15 to 35, Right: 605 to 625) ---
     if ((x >= 15 && x <= 35) || (x >= 605 && x <= 625)) {
         const px = x >= 15 && x <= 35 ? x - 15 : x - 605; // 0 to 20
@@ -108,12 +113,34 @@ function getDojoPixel(x, y) {
             return WALL_WOOD;
         }
 
-        // Calligraphy Scroll (Shodo) (x: 290 to 350, y: 15 to 90)
+        // Warm paper lanterns, set into the wall rather than floating on it.
+        for (const lanternX of [52, 570]) {
+            if (x >= lanternX && x <= lanternX + 22 && y >= 25 && y <= 69) {
+                const lx = x - lanternX, ly = y - 25;
+                if (lx === 0 || lx === 22 || ly === 0 || ly === 43) return [72, 38, 24, 255];
+                if (lx === 2 || lx === 20 || ly === 3 || ly === 40) return [191, 119, 51, 255];
+                if (ly % 10 === 0) return [229, 174, 86, 255];
+                return [248, 211, 129, 255];
+            }
+        }
+
+        // Shoji windows add depth and cool exterior contrast.
+        for (const windowX of [145, 430]) {
+            if (x >= windowX && x <= windowX + 94 && y >= 24 && y <= 88) {
+                const wx = x - windowX, wy = y - 24;
+                if (wx < 4 || wx > 90 || wy < 4 || wy > 60 || wx % 30 < 3 || wy % 20 < 3) return WALL_WOOD;
+                if ((wx + wy) % 17 === 0) return [186, 208, 201, 255];
+                return [201, 219, 210, 255];
+            }
+        }
+
+        // Calligraphy Scroll (Shodo), framed as the visual anchor of the room.
         if (x >= 290 && x <= 350 && y >= 15 && y <= 90) {
             // Top/Bottom wooden rollers
             if (y <= 18 || y >= 87) return SCROLL_BORDER;
             // Scroll border
             if (x === 290 || x === 350 || x === 291 || x === 349) return SCROLL_BORDER;
+            if (x >= 294 && x <= 346 && y >= 21 && y <= 84 && (x + y) % 23 === 0) return [231, 215, 174, 255];
             // Calligraphy Ink (Kanji-like shapes)
             if (x >= 315 && x <= 325) {
                 // Draw some abstract kanji strokes
@@ -152,7 +179,9 @@ function getDojoPixel(x, y) {
             }
         }
 
-        // Vertical wooden wall panels (every 80 pixels)
+        // Lower rail, plaster texture and vertical timber panels.
+        if (y >= 92 && y <= 99) return y === 92 || y === 99 ? [62, 34, 23, 255] : WALL_WOOD_LIGHT;
+        if ((x * 3 + y * 5) % 53 === 0) return [215, 202, 174, 255];
         if (x % 80 >= 0 && x % 80 <= 4) {
             return WALL_WOOD;
         }
@@ -171,7 +200,7 @@ function getDojoPixel(x, y) {
             return TATAMI_BLACK;
         }
 
-        // Inner Red Area
+        // Woven tatami panels, with a darker cloth seam every panel.
         // Panel lines (grid of 32x32 panels)
         const rx = x - 144;
         const ry = y - 164;
@@ -183,13 +212,13 @@ function getDojoPixel(x, y) {
         }
 
         // Base red with subtle texture
-        if ((x + y) % 8 === 0) return TATAMI_RED_LIGHT;
-        if ((x - y) % 12 === 0) return TATAMI_RED_SHADOW;
+        if ((x + y) % 9 === 0 || (x - y) % 19 === 0) return TATAMI_RED_LIGHT;
+        if ((x - y) % 13 === 0) return TATAMI_RED_SHADOW;
         return TATAMI_RED;
     }
 
     // --- WOODEN FLOOR (Around the Tatami) ---
-    // Horizontal planks (every 24 pixels)
+    // Horizontal planks, with a restrained grain to keep the play area readable.
     if (y % 24 === 0) {
         return WOOD_FLOOR_DARK;
     }

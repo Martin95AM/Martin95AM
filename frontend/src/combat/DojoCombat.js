@@ -44,8 +44,9 @@ export default class DojoCombat {
     }
 
     updateHud(message = 'Sensei practica katas. Acercate para entrenar.') {
+        const weapon = this.scene.equippedWeapon?.name;
         this.hud.setText([
-            'P: puño · O: patada · M: golpe del Sensei · F: flexiones',
+            `P: ${weapon || 'puño'} · O: patada · M: golpe del Sensei · F: flexiones`,
             `Golpes acertados — Martín: ${this.hits.player} | Sensei: ${this.hits.sensei}`,
             message
         ]);
@@ -77,8 +78,11 @@ export default class DojoCombat {
         this.scene.inputManager.targetPosition = null;
         this.player.anims.stop();
         actor.setVelocity(0, 0);
-        const strike = STRIKES[type];
-        this.actions.set(actor, { target, type, direction, started: now, resolved: false });
+        const weapon = actor === this.player && type === 'punch' ? this.scene.equippedWeapon : null;
+        const strike = weapon
+            ? { ...STRIKES.punch, reach: weapon.reach, cooldown: weapon.cooldown, windup: weapon.windup, duration: weapon.duration }
+            : STRIKES[type];
+        this.actions.set(actor, { target, type, direction, started: now, resolved: false, strike, weapon });
         this.readyAt.set(actor, now + strike.cooldown);
         this.showPose(actor, 'block', direction);
     }
@@ -103,7 +107,7 @@ export default class DojoCombat {
         }
 
         for (const [actor, action] of this.actions) {
-            const strike = STRIKES[action.type];
+            const strike = action.strike;
             const elapsed = now - action.started;
             if (!action.resolved && elapsed >= strike.windup) {
                 action.resolved = true;
@@ -156,7 +160,10 @@ export default class DojoCombat {
             this.player.setVelocity(vector.x * 110, vector.y * 110);
             this.scene.cameras.main.shake(100, 0.002);
         }
-        this.updateHud(attacker === this.player ? '¡Buen golpe, Martín!' : '¡El Sensei acertó! Probá alejarte durante su preparación.');
+        const weapon = attacker === this.player ? this.actions.get(attacker)?.weapon?.name : null;
+        this.updateHud(attacker === this.player
+            ? `¡Buen golpe${weapon ? ` con ${weapon}` : ''}, Martín!`
+            : '¡El Sensei acertó! Probá alejarte durante su preparación.');
         const flash = this.scene.add.circle(target.x, target.y - 8, 10, 0xffdf80, 0.8).setDepth(20000);
         this.scene.tweens.add({ targets: flash, alpha: 0, scale: 2, duration: 180, onComplete: () => flash.destroy() });
     }
