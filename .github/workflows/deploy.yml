@@ -1,4 +1,4 @@
-name: Deploy Frontend to GitHub Pages
+name: Deploy Martin Quest to GitHub Pages
 
 on:
   push:
@@ -28,17 +28,38 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: frontend
+
+      - name: Test combat rules
+        run: node --test frontend/src/combat/rules.test.mjs
 
       - name: Build
         run: npm run build
-        working-directory: frontend
+
+      - name: Check published character names and assets
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, existsSync } from 'node:fs';
+          const html = readFileSync('dist/index.html', 'utf8');
+          const bundle = html.match(/src="\/Martin95AM\/(assets\/[^" ]+\.js)"/);
+          assert.ok(bundle, 'Built entry script must exist');
+          const code = readFileSync(`dist/${bundle[1]}`, 'utf8');
+          for (const name of ['Sensei', 'Tecnico']) {
+            assert.ok(code.includes(`Pulsa E para hablar con ${name}`), `Missing ${name}`);
+          }
+          for (const name of ['Elias', 'Braian']) {
+            assert.ok(!code.includes(`Pulsa E para hablar con ${name}`), `Old name: ${name}`);
+          }
+          for (const asset of ['tiles/dojo.png', 'tiles/studio.png', 'player/guard.png', 'player/martin.png']) {
+            assert.ok(existsSync(`dist/assets/${asset}`), `Missing ${asset}`);
+          }
+          NODE
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -46,7 +67,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment
