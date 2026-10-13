@@ -3,6 +3,8 @@ import Player from "../entities/Player.js";
 import InputManager from "../managers/InputManager.js";
 import NPC from "../npc/NPC.js";
 import DialogSystem from "../npc/DialogSystem.js";
+import PianoPanel from "../ui/PianoPanel.js";
+import DrumPanel from "../ui/DrumPanel.js";
 
 export default class StudioScene extends Phaser.Scene {
 
@@ -11,11 +13,14 @@ export default class StudioScene extends Phaser.Scene {
     }
 
     create() {
-        // Render the beautiful 16-bit Recording Studio background
-        this.add.image(0, 0, 'studio').setOrigin(0, 0);
+        // The illustrated room is scaled to the existing 640x640 game world.
+        this.add.image(0, 0, 'studio_cozy_drums').setOrigin(0, 0).setDisplaySize(640, 640);
+        this.createStudioAtmosphere();
 
         // Spawn Martin (the player) at (320, 320)
-        this.player = new Player(this, 320, 320);
+        const preview = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('preview') : null;
+        const start = preview === 'studio' ? { x: 470, y: 395 } : preview === 'drums' ? { x: 215, y: 435 } : { x: 320, y: 320 };
+        this.player = new Player(this, start.x, start.y);
         this.player.setTexture('martin_casual', 0);
 
         this.physics.world.setBounds(0, 0, 640, 640);
@@ -28,6 +33,10 @@ export default class StudioScene extends Phaser.Scene {
         this.input.keyboard.enabled = true;
 
         this.dialogSystem = new DialogSystem(this);
+        this.pianoPanel = new PianoPanel();
+        this.drumPanel = new DrumPanel();
+        this.createPianoCorner();
+        this.createDrumCorner();
 
         // Spawn Braian (NPC) in the center of the Persian rug (320, 420)
         this.npcs = [
@@ -87,6 +96,8 @@ export default class StudioScene extends Phaser.Scene {
         this.eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
         this.qKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
         this.lKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L);
+        this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+        this.bKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
         this.exiting = false;
         this.hasHeadphones = false;
 
@@ -107,11 +118,43 @@ export default class StudioScene extends Phaser.Scene {
 
         this.events.once('shutdown', () => {
             window.removeEventListener('close-headphones', this.boundCloseHeadphones);
+            this.pianoPanel.destroy();
+            this.drumPanel.destroy();
         });
     }
 
+    createStudioAtmosphere() {
+        // Small animated recording indicator on the wood trim below the window.
+        this.add.rectangle(320, 103, 74, 15, 0x25382f)
+            .setStrokeStyle(1, 0xd0aa69).setDepth(2);
+        this.add.text(320, 103, 'SALA A · REC', {
+            fontSize: '8px', color: '#ffdb9e', fontFamily: 'monospace'
+        }).setOrigin(0.5).setDepth(3);
+        const liveLight = this.add.circle(362, 103, 2, 0xef675f).setDepth(3);
+        this.tweens.add({ targets: liveLight, alpha: 0.35, duration: 900, yoyo: true, repeat: -1 });
+    }
+
+    createPianoCorner() {
+        // Both instruments are painted into the room asset; only their physics
+        // zones and interaction points need to be added to the scene.
+        this.pianoPosition = { x: 532, y: 366 };
+        this.pianoCollider = this.add.rectangle(550, 350, 62, 124, 0x000000, 0);
+        this.physics.add.existing(this.pianoCollider, true);
+        this.physics.add.collider(this.player, this.pianoCollider);
+    }
+
+    createDrumCorner() {
+        this.drumPosition = { x: 173, y: 436 };
+        this.drumCollider = this.add.rectangle(134, 437, 73, 93, 0x000000, 0);
+        this.physics.add.existing(this.drumCollider, true);
+        this.physics.add.collider(this.player, this.drumCollider);
+    }
+
     update() {
-        if (this.exiting) return;
+        if (this.exiting || this.pianoPanel.opened || this.drumPanel.opened) {
+            this.player.setVelocity(0, 0);
+            return;
+        }
 
         const keys = this.inputManager.getInputState();
         this.player.update(keys);
@@ -125,12 +168,22 @@ export default class StudioScene extends Phaser.Scene {
         const distToBraian = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 180);
+        const distToPiano = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pianoPosition.x, this.pianoPosition.y);
+        const distToDrums = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.drumPosition.x, this.drumPosition.y);
 
         let activePrompt = null;
         let promptX = 0;
         let promptY = 0;
 
-        if (distToBraian < 50 && !this.dialogSystem.visible) {
+        if (distToPiano < 90 && !this.dialogSystem.visible) {
+            activePrompt = "Pulsa P para tocar el piano";
+            promptX = this.pianoPosition.x;
+            promptY = this.pianoPosition.y - 75;
+        } else if (distToDrums < 82 && !this.dialogSystem.visible) {
+            activePrompt = "Pulsa B para tocar la batería";
+            promptX = this.drumPosition.x;
+            promptY = this.drumPosition.y - 78;
+        } else if (distToBraian < 50 && !this.dialogSystem.visible) {
             activePrompt = "Pulsa E para hablar con Tecnico";
             promptX = this.npcs[0].x;
             promptY = this.npcs[0].y - 35;
@@ -163,30 +216,48 @@ export default class StudioScene extends Phaser.Scene {
 
         // Handle E Key Interaction (Talk to Braian)
         if (Phaser.Input.Keyboard.JustDown(this.eKey)) {
-            this.handleInteraction();
+            this.handleInteraction('npc');
         }
 
         // Handle L Key Interaction (Toggle Headphones & Spotify)
         if (Phaser.Input.Keyboard.JustDown(this.lKey)) {
-            this.handleInteraction();
+            this.handleInteraction('computer');
         }
 
         // Handle Q Key Interaction (Torii Gate Exit)
         if (Phaser.Input.Keyboard.JustDown(this.qKey)) {
-            this.handleInteraction();
+            this.handleInteraction('exit');
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.pKey) && distToPiano < 90 && !this.dialogSystem.visible) {
+            this.handleInteraction('piano');
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.bKey) && distToDrums < 82 && !this.dialogSystem.visible) {
+            this.handleInteraction('drums');
         }
     }
 
-    handleInteraction() {
+    handleInteraction(action = 'auto') {
+        const distToPiano = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pianoPosition.x, this.pianoPosition.y);
+        const distToDrums = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.drumPosition.x, this.drumPosition.y);
         const distToBraian = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 180);
 
-        if (distToBraian < 50) {
+        if ((action === 'piano' || action === 'auto') && distToPiano < 90 && !this.dialogSystem.visible) {
+            this.inputManager.targetPosition = null;
+            this.pianoPanel.open();
+            this.promptBox.setVisible(false);
+            this.promptText.setVisible(false);
+        } else if ((action === 'drums' || action === 'auto') && distToDrums < 82 && !this.dialogSystem.visible) {
+            this.inputManager.targetPosition = null;
+            this.drumPanel.open();
+            this.promptBox.setVisible(false);
+            this.promptText.setVisible(false);
+        } else if ((action === 'npc' || action === 'auto') && distToBraian < 50) {
             this.dialogSystem.showDialog(this.npcs[0]);
-        } else if (distToComputer < 50) {
+        } else if ((action === 'computer' || action === 'auto') && distToComputer < 50) {
             this.toggleSpotify();
-        } else if (distToTorii < 80 && !this.toriiOpened) {
+        } else if ((action === 'exit' || action === 'auto') && distToTorii < 80 && !this.toriiOpened) {
             this.toriiOpened = true;
             this.toriiGate.play('torii-open');
             this.physics.world.disableBody(this.toriiGate.body); // disable collision so player can walk through!

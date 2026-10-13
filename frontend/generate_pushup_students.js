@@ -69,26 +69,22 @@ function createPng(width, height, pixelFunc) {
     return Buffer.concat([signature, ihdrChunk, idatChunk, iendChunk]);
 }
 
-// Colors
-const SKIN_BASE = [255, 219, 172, 255];
-const SKIN_SHADOW = [224, 172, 135, 255];
-const SKIN_OUTLINE = [141, 85, 36, 255];
-const HAIR_BASE = [90, 50, 30, 255];
-const HAIR_OUTLINE = [45, 20, 10, 255];
+// Palette and variants. Keeping the art code here makes every generated sprite
+// reproducible instead of relying on hand-edited binary PNGs.
 const SUIT_BASE = [245, 245, 250, 255];
 const SUIT_SHADOW = [185, 195, 210, 255];
 const SUIT_OUTLINE = [110, 125, 145, 255];
 const TRANSPARENT = [0, 0, 0, 0];
 
-const studentBelts = {
-    yellow: [235, 210, 40, 255],
-    orange: [235, 120, 30, 255],
-    green: [40, 160, 60, 255],
-    blue: [30, 100, 210, 255],
-    brown: [110, 65, 30, 255]
+const students = {
+    yellow: { belt: [235, 210, 40, 255], skin: [255, 219, 172, 255], shade: [224, 172, 135, 255], outline: [141, 85, 36, 255], hair: [83, 47, 30, 255], hairOutline: [43, 22, 15, 255], fringe: 0 },
+    orange: { belt: [235, 120, 30, 255], skin: [224, 170, 126, 255], shade: [181, 121, 86, 255], outline: [112, 69, 43, 255], hair: [33, 35, 48, 255], hairOutline: [17, 18, 28, 255], fringe: 2 },
+    green: { belt: [40, 160, 60, 255], skin: [137, 84, 57, 255], shade: [98, 54, 39, 255], outline: [68, 39, 27, 255], hair: [25, 19, 18, 255], hairOutline: [12, 10, 10, 255], fringe: 1 },
+    blue: { belt: [30, 100, 210, 255], skin: [247, 202, 162, 255], shade: [211, 153, 118, 255], outline: [125, 79, 53, 255], hair: [184, 107, 49, 255], hairOutline: [96, 49, 24, 255], fringe: 3 },
+    brown: { belt: [110, 65, 30, 255], skin: [105, 64, 46, 255], shade: [74, 42, 32, 255], outline: [52, 30, 23, 255], hair: [45, 29, 23, 255], hairOutline: [23, 15, 13, 255], fringe: 0 }
 };
 
-function getSeizaPixel(lx, ly, isBreathing, beltColor) {
+function getSeizaPixel(lx, ly, isBreathing, style) {
     const shift = isBreathing ? 1 : 0;
 
     // --- HEAD & HAIR (Facing Left, shifted down) ---
@@ -96,24 +92,25 @@ function getSeizaPixel(lx, ly, isBreathing, beltColor) {
     const headYEnd = 28 - shift;
     if (ly >= headYStart && ly <= headYEnd && lx >= 8 && lx <= 23) {
         if (ly <= headYStart + 5) {
-            if (lx === 8 || lx === 23 || ly === headYStart) return HAIR_OUTLINE;
-            return HAIR_BASE;
+            if (lx === 8 || lx === 23 || ly === headYStart) return style.hairOutline;
+            if (ly === headYStart + 4 && lx >= 10 && lx <= 10 + style.fringe) return style.hairOutline;
+            return style.hair;
         }
         if (lx >= 16 && ly <= headYStart + 11) {
-            if (lx === 23) return HAIR_OUTLINE;
-            return HAIR_BASE;
+            if (lx === 23) return style.hairOutline;
+            return style.hair;
         }
         if (lx >= 9 && lx <= 15 && ly <= headYEnd - 1) {
-            if (lx === 9 || ly === headYEnd - 1) return SKIN_OUTLINE;
+            if (lx === 9 || ly === headYEnd - 1) return style.outline;
             if (ly === headYStart + 8 && (lx === 11 || lx === 12)) {
                 return [45, 20, 10, 255];
             }
-            if (ly >= headYStart + 11) return SKIN_SHADOW;
-            return SKIN_BASE;
+            if (ly >= headYStart + 11) return style.shade;
+            return style.skin;
         }
         if (lx >= 9 && lx <= 22 && ly <= headYEnd - 1) {
-            if (lx === 22 || ly === headYEnd - 1) return SKIN_OUTLINE;
-            return SKIN_SHADOW;
+            if (lx === 22 || ly === headYEnd - 1) return style.outline;
+            return style.shade;
         }
     }
 
@@ -121,18 +118,18 @@ function getSeizaPixel(lx, ly, isBreathing, beltColor) {
     const neckYStart = 29 - shift;
     const neckYEnd = 32 - shift;
     if (ly >= neckYStart && ly <= neckYEnd && lx >= 11 && lx <= 14) {
-        if (ly === neckYStart) return SKIN_BASE;
-        return SKIN_SHADOW;
+        if (ly === neckYStart) return style.skin;
+        return style.shade;
     }
 
     // --- BELT & KNOT ---
     const beltYStart = 36 - shift;
     const beltYEnd = 38 - shift;
     if (ly >= beltYStart && ly <= beltYEnd && lx >= 9 && lx <= 21) {
-        return beltColor;
+        return style.belt;
     }
     if (ly >= beltYEnd + 1 && ly <= beltYEnd + 4 && lx === 10) {
-        return beltColor;
+        return style.belt;
     }
 
     // --- TORSO / SUIT ---
@@ -154,7 +151,7 @@ function getSeizaPixel(lx, ly, isBreathing, beltColor) {
     return TRANSPARENT;
 }
 
-function getPushupPixel(lx, ly, isUp, beltColor) {
+function getPushupPixel(lx, ly, isUp, style) {
     // isUp: true for Frame 2 (Push-up UP), false for Frame 3 (Push-up DOWN)
     const bodyY = isUp ? 32 : 38; // body is higher when up
     const headY = isUp ? 22 : 28; // head is higher when up
@@ -163,18 +160,18 @@ function getPushupPixel(lx, ly, isUp, beltColor) {
     if (ly >= headY && ly <= headY + 12 && lx >= 4 && lx <= 16) {
         // Hair (top and back)
         if (ly <= headY + 4) {
-            if (lx === 4 || lx === 16 || ly === headY) return HAIR_OUTLINE;
-            return HAIR_BASE;
+            if (lx === 4 || lx === 16 || ly === headY) return style.hairOutline;
+            return style.hair;
         }
         // Face Skin (left side)
         if (lx >= 5 && lx <= 11 && ly <= headY + 11) {
-            if (lx === 5 || ly === headY + 11) return SKIN_OUTLINE;
+            if (lx === 5 || ly === headY + 11) return style.outline;
             if (ly === headY + 7 && (lx === 7 || lx === 8)) return [45, 20, 10, 255]; // closed eye
-            return SKIN_BASE;
+            return style.skin;
         }
         if (lx >= 5 && lx <= 15 && ly <= headY + 11) {
-            if (lx === 15 || ly === headY + 11) return SKIN_OUTLINE;
-            return SKIN_SHADOW;
+            if (lx === 15 || ly === headY + 11) return style.outline;
+            return style.shade;
         }
     }
 
@@ -182,14 +179,14 @@ function getPushupPixel(lx, ly, isUp, beltColor) {
     if (isUp) {
         // Arms straight down to the floor (y: 34 to 47, x: 10 to 13)
         if (ly >= 34 && ly <= 47 && lx >= 10 && lx <= 13) {
-            if (ly >= 45) return SKIN_BASE; // hands on floor
+            if (ly >= 45) return style.skin; // hands on floor
             if (lx === 10 || lx === 13) return SUIT_OUTLINE;
             return SUIT_BASE;
         }
     } else {
         // Arms bent (y: 40 to 47, x: 10 to 15)
         if (ly >= 40 && ly <= 47 && lx >= 10 && lx <= 15) {
-            if (ly >= 45) return SKIN_BASE;
+            if (ly >= 45) return style.skin;
             if (lx === 10 || lx === 15) return SUIT_OUTLINE;
             return SUIT_SHADOW;
         }
@@ -197,7 +194,7 @@ function getPushupPixel(lx, ly, isUp, beltColor) {
 
     // --- BELT ---
     if (ly >= bodyY + 4 && ly <= bodyY + 6 && lx >= 16 && lx <= 18) {
-        return beltColor;
+        return style.belt;
     }
 
     // --- TORSO & LEGS (Horizontal body) ---
@@ -209,25 +206,25 @@ function getPushupPixel(lx, ly, isUp, beltColor) {
 
     // --- FEET (Touching floor at the back) ---
     if (ly >= bodyY + 2 && ly <= bodyY + 7 && lx >= 29 && lx <= 31) {
-        return SKIN_SHADOW;
+        return style.shade;
     }
 
     return TRANSPARENT;
 }
 
 // Generate 5 student spritesheets (128x48 - 4 frames of 32x48)
-Object.keys(studentBelts).forEach(colorName => {
+Object.entries(students).forEach(([colorName, style]) => {
     const pngBuf = createPng(128, 48, (x, y) => {
         const frame = Math.floor(x / 32);
         const lx = x % 32;
         const ly = y;
 
-        if (frame === 0) return getSeizaPixel(lx, ly, false, studentBelts[colorName]);
-        if (frame === 1) return getSeizaPixel(lx, ly, true, studentBelts[colorName]);
-        if (frame === 2) return getPushupPixel(lx, ly, true, studentBelts[colorName]);
-        return getPushupPixel(lx, ly, false, studentBelts[colorName]);
+        if (frame === 0) return getSeizaPixel(lx, ly, false, style);
+        if (frame === 1) return getSeizaPixel(lx, ly, true, style);
+        if (frame === 2) return getPushupPixel(lx, ly, true, style);
+        return getPushupPixel(lx, ly, false, style);
     });
-    fs.writeFileSync(`frontend/public/assets/player/student_${colorName}.png`, pngBuf);
+    fs.writeFileSync(path.join(__dirname, 'public', 'assets', 'player', `student_${colorName}.png`), pngBuf);
     console.log(`Created 4-frame student_${colorName}.png`);
 });
 

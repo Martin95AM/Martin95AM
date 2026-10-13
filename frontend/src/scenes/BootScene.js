@@ -29,6 +29,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('tiles', 'assets/tiles/world.png');
         this.load.image('dojo', 'assets/tiles/dojo.png');
         this.load.image('studio', 'assets/tiles/studio.png');
+        this.load.image('studio_cozy_drums', 'assets/tiles/studio_cozy_drums.png');
         this.load.image('weapon_rack', 'assets/tiles/weapon_rack.png');
         this.load.spritesheet('torii', 'assets/tiles/torii.png', {
             frameWidth: 96,
@@ -50,7 +51,8 @@ export default class BootScene extends Phaser.Scene {
 
         createCharacterTextures(this);
         this.createAnimations();
-        this.scene.start("MenuScene");
+        const studioPreview = import.meta.env.DEV && ['studio', 'drums'].includes(new URLSearchParams(window.location.search).get('preview'));
+        this.scene.start(studioPreview ? 'StudioScene' : 'MenuScene');
 
     }
 

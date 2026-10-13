@@ -1,0 +1,27 @@
+.piano-overlay[hidden] { display: none; }
+.piano-overlay { position: fixed; inset: 0; z-index: 20000; display: grid; place-items: center; padding: 18px; background: rgba(9, 8, 18, .72); backdrop-filter: blur(5px); box-sizing: border-box; }
+.piano-panel { width: min(760px, 100%); max-height: min(95vh, 760px); overflow: auto; box-sizing: border-box; padding: 24px; border: 2px solid #e9bd69; border-radius: 16px; color: #fff1d9; background: linear-gradient(145deg, #2b2439, #171b2c 66%); box-shadow: 0 24px 80px #070710, inset 0 1px #ffffff22; font-family: 'Trebuchet MS', sans-serif; }
+.piano-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.piano-kicker, .piano-section-heading, .piano-footer { color: #cba7d6; font-size: 11px; font-weight: 700; letter-spacing: .13em; }
+.piano-header h2 { margin: 5px 0 0; font-size: clamp(25px, 4vw, 37px); color: #ffe4a0; }
+.piano-close { border: 1px solid #f6daa3; border-radius: 8px; background: #41374b; color: white; width: 36px; height: 36px; cursor: pointer; font-size: 27px; line-height: 30px; }
+.piano-close:hover, .piano-close:focus-visible { background: #805269; }
+.piano-help { color: #d9cce3; font-size: 14px; margin: 12px 0 18px; }
+.piano-keyboard { position: relative; width: 100%; height: clamp(130px, 24vw, 190px); border-radius: 8px; background: #121321; border: 8px solid #38283b; box-sizing: border-box; box-shadow: 0 9px #120e1b; }
+.piano-key { position: absolute; top: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 5px; padding: 0 0 12px; cursor: pointer; font: inherit; touch-action: none; }
+.piano-key.white { width: calc(100% / 9); height: 100%; border: 1px solid #9b91a5; border-radius: 0 0 5px 5px; color: #3d3446; background: linear-gradient(#faf8f1, #d2c9d7); z-index: 1; }
+.piano-key.black { width: 7%; height: 62%; border: 1px solid #08080d; border-radius: 0 0 5px 5px; color: #f8dbb0; background: linear-gradient(105deg, #3b344a, #12131c); z-index: 2; box-shadow: 2px 4px 4px #0008; padding-bottom: 8px; }
+.piano-key span { font-size: 11px; }.piano-key.black span { display: none; }
+.piano-key kbd { font-family: monospace; font-weight: bold; font-size: 14px; }
+.piano-key.white.pressed { background: #e5b977; transform: translateY(2px); }.piano-key.black.pressed { background: #9a668d; transform: translateY(2px); }
+.piano-key:focus-visible { outline: 3px solid #ffca64; outline-offset: -3px; }
+.piano-rack { margin-top: 25px; border: 1px solid #665578; border-radius: 10px; padding: 16px; background: #141627bb; }
+.piano-section-heading { display: flex; justify-content: space-between; margin-bottom: 13px; }.piano-live { color: #8fe1ac; }
+.piano-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.piano-controls fieldset { min-width: 0; margin: 0; padding: 13px; border: 1px solid #6d5c78; border-radius: 8px; }
+.piano-controls legend { color: #ffd99b; padding: 0 5px; font-weight: bold; font-size: 13px; }
+.piano-controls label { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin-bottom: 9px; color: #e6dbe9; font-size: 13px; }
+.piano-controls output { color: #ffd99b; font-variant-numeric: tabular-nums; }
+.piano-controls input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: #e9bd69; cursor: pointer; }
+.piano-footer { margin: 15px 0 0; text-align: center; letter-spacing: .06em; }
+@media (max-width: 620px) { .piano-panel { padding: 16px; }.piano-controls { grid-template-columns: 1fr; }.piano-key span { display: none; }.piano-key kbd { font-size: 12px; } }

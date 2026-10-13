@@ -54,14 +54,18 @@ export default class WorldScene extends Phaser.Scene {
         this.physics.add.collider(this.player, this.toriiGate);
         this.toriiOpened = false;
 
-        // Spawn 5 resting students closer together and facing left (towards the tatami)
-        this.students = [
-            this.physics.add.staticSprite(530, 220, 'student_yellow'),
-            this.physics.add.staticSprite(530, 260, 'student_orange'),
-            this.physics.add.staticSprite(530, 300, 'student_green'),
-            this.physics.add.staticSprite(530, 340, 'student_blue'),
-            this.physics.add.staticSprite(530, 380, 'student_brown')
+        // A compact seiza group facing the tatami. Two rows make the dojo feel
+        // occupied while preserving a clear path for the player on the left.
+        const studentSetup = [
+            { x: 500, y: 234, key: 'student_yellow' },
+            { x: 548, y: 234, key: 'student_orange' },
+            { x: 596, y: 234, key: 'student_green' },
+            { x: 524, y: 278, key: 'student_blue' },
+            { x: 572, y: 278, key: 'student_brown' }
         ];
+        this.studentShadows = studentSetup.map(({ x, y }) => this.add.ellipse(x, y + 21, 29, 7, 0x182233, 0.24)
+            .setDepth(y - 1));
+        this.students = studentSetup.map(({ x, y, key }) => this.physics.add.staticSprite(x, y, key));
 
         this.students.forEach(student => {
             this.physics.add.collider(this.player, student);
@@ -116,6 +120,7 @@ export default class WorldScene extends Phaser.Scene {
         this.weaponRack.setDepth(this.weaponRack.y);
         this.toriiGate.setDepth(this.toriiGate.y);
         this.students.forEach(student => student.setDepth(student.y));
+        this.studentShadows.forEach((shadow, index) => shadow.setDepth(this.students[index].y - 1));
 
         // Check distance to spots
         const distToElias = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
