@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { createCharacterTextures } from '../art/characters.js';
 
 export default class BootScene extends Phaser.Scene {
 
@@ -47,6 +48,7 @@ export default class BootScene extends Phaser.Scene {
 
     create() {
 
+        createCharacterTextures(this);
         this.createAnimations();
         this.scene.start("MenuScene");
 

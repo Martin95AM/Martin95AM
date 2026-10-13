@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { ART_SCALE } from '../art/characters.js';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
 
@@ -11,8 +12,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
         this.setCollideWorldBounds(true);
         this.setOrigin(0.5, 0.5);
-        this.body.setSize(20, 32);
-        this.body.setOffset(6, 16);
+        this.setScale(ART_SCALE);
+        this.body.setSize(20 / ART_SCALE, 32 / ART_SCALE);
+        this.body.setOffset(6 / ART_SCALE, 16 / ART_SCALE);
 
         this.speed = 120;
         this.runSpeed = 180;

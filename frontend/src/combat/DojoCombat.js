@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { STRIKES, DIRECTIONS, canHit, facingTarget } from './rules.mjs';
 import { createCombatPoses } from './poses.js';
+import { ART_SCALE } from '../art/characters.js';
 
 export default class DojoCombat {
     constructor(scene) {
@@ -16,7 +17,7 @@ export default class DojoCombat {
         this.stopped = false;
         createCombatPoses(scene);
         this.visuals = new Map([this.player, this.sensei].map(actor => [
-            actor, scene.add.sprite(actor.x, actor.y, actor.texture.key).setVisible(false)
+            actor, scene.add.sprite(actor.x, actor.y, actor.texture.key, 0).setScale(ART_SCALE).setVisible(false)
         ]));
         this.keys = scene.input.keyboard.addKeys({
             punch: Phaser.Input.Keyboard.KeyCodes.P,

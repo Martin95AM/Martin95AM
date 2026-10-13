@@ -16,7 +16,7 @@ export default class StudioScene extends Phaser.Scene {
 
         // Spawn Martin (the player) at (320, 320)
         this.player = new Player(this, 320, 320);
-        this.player.setTexture('martin_casual');
+        this.player.setTexture('martin_casual', 0);
 
         this.physics.world.setBounds(0, 0, 640, 640);
         this.cameras.main.setBounds(0, 0, 640, 640);
@@ -97,7 +97,7 @@ export default class StudioScene extends Phaser.Scene {
         this.boundCloseHeadphones = () => {
             if (this.hasHeadphones) {
                 this.hasHeadphones = false;
-                this.player.setTexture('martin_casual');
+                this.player.setTexture('martin_casual', 0);
                 this.spotifyUI.setVisible(false);
                 this.soundWaves.clear();
                 this.showFloatingBubble(this.player.x, this.player.y, "Auriculares quitados.");
@@ -207,12 +207,12 @@ export default class StudioScene extends Phaser.Scene {
         this.hasHeadphones = !this.hasHeadphones;
         const spotifyDiv = document.getElementById('spotify-player');
         if (this.hasHeadphones) {
-            this.player.setTexture('martin_casual_headphones');
+            this.player.setTexture('martin_casual_headphones', 0);
             this.spotifyUI.setVisible(true);
             if (spotifyDiv) spotifyDiv.style.display = 'block'; // Show real Spotify player!
             this.showFloatingBubble(this.player.x, this.player.y, "🎧 Escuchando Dojo Beats...");
         } else {
-            this.player.setTexture('martin_casual');
+            this.player.setTexture('martin_casual', 0);
             this.spotifyUI.setVisible(false);
             if (spotifyDiv) spotifyDiv.style.display = 'none'; // Hide real Spotify player!
             this.showFloatingBubble(this.player.x, this.player.y, "Auriculares quitados.");
