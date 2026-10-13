@@ -160,12 +160,45 @@ export default class DojoCombat {
             this.player.setVelocity(vector.x * 110, vector.y * 110);
             this.scene.cameras.main.shake(100, 0.002);
         }
-        const weapon = attacker === this.player ? this.actions.get(attacker)?.weapon?.name : null;
+        const activeWeapon = attacker === this.player ? this.actions.get(attacker)?.weapon : null;
+        const weapon = activeWeapon?.name;
         this.updateHud(attacker === this.player
             ? `¡Buen golpe${weapon ? ` con ${weapon}` : ''}, Martín!`
             : '¡El Sensei acertó! Probá alejarte durante su preparación.');
-        const flash = this.scene.add.circle(target.x, target.y - 8, 10, 0xffdf80, 0.8).setDepth(20000);
-        this.scene.tweens.add({ targets: flash, alpha: 0, scale: 2, duration: 180, onComplete: () => flash.destroy() });
+        this.createImpactEffect(target, activeWeapon?.key);
+    }
+
+    createImpactEffect(target, weaponKey) {
+        const colors = {
+            bo: 0xf7c764,
+            sai: 0xdceaf6,
+            tonfa: 0xe39a55,
+            nunchaku: 0xffd35c,
+            kamas: 0xff655f
+        };
+        const color = colors[weaponKey] || 0xffdf80;
+        const flash = this.scene.add.circle(target.x, target.y - 8, weaponKey ? 12 : 10, color, 0.82).setDepth(20000);
+        const marks = this.scene.add.graphics().setDepth(20001);
+        marks.lineStyle(weaponKey === 'bo' ? 3 : 2, color, 0.95);
+        const x = target.x, y = target.y - 8;
+        if (weaponKey === 'kamas') {
+            marks.beginPath().moveTo(x - 14, y - 12).lineTo(x + 14, y + 12)
+                .moveTo(x - 14, y + 12).lineTo(x + 14, y - 12).strokePath();
+        } else if (weaponKey === 'nunchaku') {
+            marks.strokeCircle(x, y, 15);
+            marks.beginPath().moveTo(x - 13, y + 9).lineTo(x + 12, y - 10).strokePath();
+        } else if (weaponKey === 'sai') {
+            marks.beginPath().moveTo(x - 15, y - 5).lineTo(x + 15, y - 5)
+                .moveTo(x - 15, y + 5).lineTo(x + 15, y + 5).strokePath();
+        } else if (weaponKey === 'tonfa') {
+            marks.strokeRect(x - 10, y - 10, 20, 20);
+        } else {
+            marks.beginPath().moveTo(x - 18, y + 8).lineTo(x + 18, y - 8).strokePath();
+        }
+        this.scene.tweens.add({
+            targets: [flash, marks], alpha: 0, scaleX: 1.45, scaleY: 1.45, duration: 190,
+            onComplete: () => { flash.destroy(); marks.destroy(); }
+        });
     }
 
     stop() {

@@ -23,13 +23,24 @@ export function drawCharacter(ctx, character, direction = 'down', pose = 'idle',
     const technician = character === 'braian_casual';
     const sensei = character === 'guard';
     const studentColor = character.startsWith('student_') ? character.replace('student_', '') : null;
+    const student = Boolean(studentColor);
+    const martin = character === 'martin' || character.startsWith('martin_');
     const p = studentColor ? studentPalettes[studentColor]
         : technician ? palettes.technician : sensei ? palettes.guard : palettes.martin;
     const clothed = casual || technician;
     const side = direction === 'left' || direction === 'right';
     const back = direction === 'up';
     const fighting = ['block', 'punch', 'kick'].includes(pose);
-    const stride = pose === 'walk' ? [0, 1, 0, -1][step] : 0;
+    // Four deliberately distinct gait phases keep the feet from appearing to
+    // slide: rear contact, passing position, front contact, then recovery.
+    // These coordinates live in the high-resolution canvas and are scaled down
+    // to the established 32×48 world footprint below.
+    const gait = pose === 'walk'
+        ? [[-7, 7], [-2, 2], [7, -7], [2, -2]][step % 4]
+        : [0, 0];
+    const rearStride = gait[0];
+    const frontStride = gait[1];
+    const armStride = rearStride;
     const outline = '#1c2332';
     ctx.save();
     if (direction === 'left') { ctx.translate(96, 0); ctx.scale(-1, 1); }
@@ -77,8 +88,10 @@ export function drawCharacter(ctx, character, direction = 'down', pose = 'idle',
     }
 
     const leftHip = [side ? 45 : 40, 81], rightHip = [side ? 52 : 55, 81];
-    let rearKnee = [side ? 40 : 36, 105-stride*4], rearAnkle = [side ? 34-stride*5 : 34-stride*2, 130-stride*3];
-    let frontKnee = [side ? 56 : 59, 105+stride*4], frontAnkle = [side ? 61+stride*5 : 62+stride*2, 130+stride*3];
+    let rearKnee = [side ? 40 + rearStride * 0.7 : 36, 105 + rearStride * 0.45],
+        rearAnkle = [side ? 34 + rearStride : 34 - rearStride * 0.28, 130 + rearStride * 0.18];
+    let frontKnee = [side ? 56 + frontStride * 0.7 : 59, 105 + frontStride * 0.45],
+        frontAnkle = [side ? 61 + frontStride : 62 - frontStride * 0.28, 130 + frontStride * 0.18];
     if (fighting) {
         rearKnee = [31,105]; rearAnkle = [22,130]; frontKnee = [65,107]; frontAnkle = [74,130];
     }
@@ -93,8 +106,8 @@ export function drawCharacter(ctx, character, direction = 'down', pose = 'idle',
     line([[frontKnee[0]-3,frontKnee[1]-3],[frontKnee[0]+4,frontKnee[1]]],p.deep);
 
     const shoulders = side ? [[42,44],[54,44]] : [[33,44],[61,44]];
-    let rearElbow = [side ? 33 : 26,64+stride*4], rearHand = [side ? 35-stride*7 : 27,82+stride*4];
-    let frontElbow = [side ? 62 : 68,64-stride*4], frontHand = [side ? 62+stride*7 : 67,82-stride*4];
+    let rearElbow = [side ? 33 : 26,64+armStride*0.55], rearHand = [side ? 35-armStride : 27,82+armStride*0.55];
+    let frontElbow = [side ? 62 : 68,64-armStride*0.55], frontHand = [side ? 62+armStride : 67,82-armStride*0.55];
     if (fighting) { rearElbow = [30,61]; rearHand = [40,51]; frontElbow = [70,60]; frontHand = [67,36]; }
     if (pose === 'punch') {
         frontElbow = side ? [81,46] : [65,back ? 32 : 65];
@@ -130,13 +143,18 @@ export function drawCharacter(ctx, character, direction = 'down', pose = 'idle',
     }
     for (const fold of [[[36,62],[42,67]],[[58,65],[52,70]],[[36,77],[42,75]]]) line(fold,p.deep,1);
     if (!clothed) {
-        poly([[35,77],[59,77],[59,83],[35,83]],'#20232d');
-        line([[36,78],[58,78]],'#515664',1);
+        const beltColor = (martin || student) ? p.accent : '#20232d';
+        // Red for Martín, rank colors for the students, and black for Sensei.
+        // This is deliberately a broad, high-contrast shape so it survives the
+        // final 1/3 display scale of the maps.
+        poly([[35,77],[59,77],[59,83],[35,83]],beltColor);
+        line([[36,78],[58,78]],p.light,0.9);
         if (!back) {
+            const tailShade = (martin || student) ? beltColor : '#232737';
             poly([[46,78],[51,80],[49,85],[45,84]],'#101725');
-            poly([[46,83],[49,84],[46,100],[42,98]],'#232737');
-            poly([[49,83],[52,83],[57,95],[53,97]],'#282c38');
-            line([[44,94],[46,94]],p.accent,2);
+            poly([[46,83],[49,84],[46,100],[42,98]],tailShade);
+            poly([[49,83],[52,83],[57,95],[53,97]],tailShade);
+            line([[44,94],[46,94]],martin || student ? p.light : p.accent,1.4);
         }
     }
 
@@ -152,9 +170,22 @@ export function drawCharacter(ctx, character, direction = 'down', pose = 'idle',
         line(side ? [[55,23],[57,26],[54,26]] : [[49,23],[48,27],[50,27]],'#885b4b',1);
         line(side ? [[52,30],[55,30]] : [[46,31],[51,31]],'#794f48',1.2);
         if (sensei) line([[42,28],[45,33],[51,34],[55,29]],'#705b56',2);
+        if (martin || technician) {
+            // Short boxed beard and moustache: compact enough to stay readable
+            // at 32px while matching the approved character concept for Martín
+            // and the bearded studio technician.
+            poly(side ? [[48,26],[56,26],[55,31],[51,34],[47,30]] : [[43,26],[53,26],[52,32],[48,35],[43,31]], '#35251f', null);
+            line(side ? [[50,25],[55,25]] : [[45,25],[51,25]], '#35251f', 1.6);
+        }
     }
     poly([[39,24],[37,18],[39,11],[43,8],[54,9],[58,14],[56,19],[51,16],[46,17],[42,15],[42,24]],p.hair);
     line([[41,13],[47,11],[54,13]],sensei ? '#6f737b' : '#765142',2);
+    if (technician && !back) {
+        // Compact glasses distinguish the sound engineer from the dojo cast.
+        line([[40,21],[46,21],[47,23],[41,23],[40,21]],'#0b1522',1);
+        line([[51,21],[56,21],[56,23],[51,23],[51,21]],'#0b1522',1);
+        line([[47,22],[51,22]],'#0b1522',1);
+    }
     if (sensei) { line([[39,19],[41,26]],'#aaa9a3',2.5); if (!side) line([[56,19],[55,26]],'#aaa9a3',2); }
     if (back) poly([[40,20],[55,20],[55,30],[51,34],[44,33],[40,28]],p.hair);
     arm(shoulders[1],frontElbow,frontHand,false);
@@ -178,7 +209,10 @@ export function createCharacterTextures(scene) {
         for (let frame = 0; frame < 20; frame++) {
             const x = frame % 4 * FRAME_WIDTH, y = Math.floor(frame / 4) * FRAME_HEIGHT;
             texture.context.save(); texture.context.translate(x,y);
-            drawCharacter(texture.context,key,['down','left','right','up'][Math.floor(frame / 4)] || 'left',frame >= 16 ? 'pushup' : frame % 4 === 0 ? 'idle' : 'walk',frame % 4);
+            // The movement sheets use a full four-frame walk, rather than an
+            // idle frame followed by three near-identical steps. Idle animations
+            // still use frame 0, whose planted pose reads cleanly when stationary.
+            drawCharacter(texture.context,key,['down','left','right','up'][Math.floor(frame / 4)] || 'left',frame >= 16 ? 'pushup' : 'walk',frame % 4);
             texture.context.restore();
             texture.add(frame,0,x,y,FRAME_WIDTH,FRAME_HEIGHT);
         }

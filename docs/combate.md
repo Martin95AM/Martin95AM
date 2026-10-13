@@ -11,6 +11,7 @@ direcciones. Las katas son una demostración: solo golpea a Martín al pulsar M.
 | M | Pedir un golpe al Sensei estando cerca; elige puño o patada según la distancia |
 | F | Activar o detener las flexiones (antes estaban en P) |
 | E | Hablar / interactuar |
+| E cerca del arsenal | Abrir el inventario de armas; teclas 1–5 para equipar |
 | Q | Pasar por la puerta al otro escenario |
 
 Los golpes se comprueban al terminar la preparación: se pueden esquivar
@@ -21,6 +22,14 @@ brevemente cuando recibe uno. El marcador se reinicia al volver al dojo.
 
 Las poses se dibujan en código a partir de la cabeza y el uniforme originales;
 no requieren descargar nuevas imágenes.
+
+## Arsenal
+
+El arsenal contiene Bō, Sai, Tonfa, Nunchaku y Kamas. Cada arma usa **P** y
+tiene alcance, preparación y recuperación propios. Las kamas (tecla **5**)
+combinan dos hojas cortas en un corte cruzado de alcance medio. Los impactos
+usan destellos específicos: barrido para el Bō, doble línea para Sai, cuadro de
+golpe para Tonfa, aro para Nunchaku y dos tajos cruzados para Kamas.
 
 ## Ejecución y comprobación
 

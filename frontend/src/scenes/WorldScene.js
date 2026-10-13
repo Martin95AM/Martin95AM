@@ -109,7 +109,8 @@ export default class WorldScene extends Phaser.Scene {
             bo: Phaser.Input.Keyboard.KeyCodes.ONE,
             sai: Phaser.Input.Keyboard.KeyCodes.TWO,
             tonfa: Phaser.Input.Keyboard.KeyCodes.THREE,
-            nunchaku: Phaser.Input.Keyboard.KeyCodes.FOUR
+            nunchaku: Phaser.Input.Keyboard.KeyCodes.FOUR,
+            kamas: Phaser.Input.Keyboard.KeyCodes.FIVE
         });
 
         this.eliasState = 'idle'; // 'idle', 'talked', 'walking_away', 'training'
@@ -278,17 +279,17 @@ export default class WorldScene extends Phaser.Scene {
 
     createWeaponMenu() {
         this.weaponMenu = this.add.container(150, 205).setVisible(false).setDepth(25000);
-        const shadow = this.add.rectangle(3, 4, 188, 106, 0x081018, 0.45);
-        const bg = this.add.rectangle(0, 0, 188, 106, 0x111827, 0.97)
+        const shadow = this.add.rectangle(3, 4, 198, 124, 0x081018, 0.45);
+        const bg = this.add.rectangle(0, 0, 198, 124, 0x111827, 0.97)
             .setStrokeStyle(2, 0xd2ae72);
-        const title = this.add.text(0, -40, 'ARSENAL DEL DOJO', {
+        const title = this.add.text(0, -49, 'ARSENAL DEL DOJO', {
             fontSize: '10px', color: '#ffe1a3', fontFamily: 'monospace', fontStyle: 'bold'
         }).setOrigin(0.5);
-        const options = this.add.text(-78, -23,
-            '1  BO         alcance largo\n2  SAI        rápido y preciso\n3  TONFA      defensa sólida\n4  NUNCHAKU   combo veloz', {
+        const options = this.add.text(-83, -34,
+            '1  BO         alcance largo\n2  SAI        rápido y preciso\n3  TONFA      defensa sólida\n4  NUNCHAKU   combo veloz\n5  KAMAS      corte cruzado', {
                 fontSize: '8px', color: '#e7edf2', fontFamily: 'monospace', lineSpacing: 5
             });
-        const hint = this.add.text(0, 42, '1–4 equipar  ·  ESC cerrar', {
+        const hint = this.add.text(0, 51, '1–5 equipar  ·  ESC cerrar', {
             fontSize: '7px', color: '#9dafc3', fontFamily: 'monospace'
         }).setOrigin(0.5);
         this.weaponMenu.add([shadow, bg, title, options, hint]);
@@ -300,7 +301,7 @@ export default class WorldScene extends Phaser.Scene {
         this.weaponMenu.setVisible(true);
         this.promptBox.setVisible(false);
         this.promptText.setVisible(false);
-        this.combat.updateHud('Elegí un arma del arsenal con 1, 2, 3 o 4.');
+        this.combat.updateHud('Elegí un arma del arsenal con 1, 2, 3, 4 o 5.');
     }
 
     closeWeaponMenu() {
@@ -313,7 +314,8 @@ export default class WorldScene extends Phaser.Scene {
             bo: { name: 'Bo', color: 0xb9783d, reach: 76, cooldown: 500, windup: 150, duration: 400 },
             sai: { name: 'Sai', color: 0xd7e0e5, reach: 50, cooldown: 330, windup: 95, duration: 280 },
             tonfa: { name: 'Tonfa', color: 0x704225, reach: 46, cooldown: 390, windup: 110, duration: 320 },
-            nunchaku: { name: 'Nunchaku', color: 0xc88b43, reach: 61, cooldown: 360, windup: 120, duration: 330 }
+            nunchaku: { name: 'Nunchaku', color: 0xc88b43, reach: 61, cooldown: 360, windup: 120, duration: 330 },
+            kamas: { name: 'Kamas', color: 0xd4dde7, reach: 58, cooldown: 410, windup: 105, duration: 350 }
         };
         for (const [key, keyObject] of Object.entries(this.weaponKeys)) {
             if (!Phaser.Input.Keyboard.JustDown(keyObject)) continue;
@@ -333,7 +335,7 @@ export default class WorldScene extends Phaser.Scene {
         const vector = direction === 'left' ? [-1, 0] : direction === 'right' ? [1, 0]
             : direction === 'up' ? [0, -1] : [0, 1];
         const attacking = this.combat.actions.get(this.player)?.type === 'punch';
-        const length = this.equippedWeapon.key === 'bo' ? 27 : this.equippedWeapon.key === 'nunchaku' ? 22 : 14;
+        const length = this.equippedWeapon.key === 'bo' ? 27 : this.equippedWeapon.key === 'nunchaku' ? 22 : this.equippedWeapon.key === 'kamas' ? 17 : 14;
         const extension = attacking ? 1.65 : 1;
         const hx = x + vector[0] * 8, hy = y - 3 + vector[1] * 8;
         const ex = hx + vector[0] * length * extension + (vector[0] === 0 ? length * 0.55 : 0);
@@ -350,6 +352,23 @@ export default class WorldScene extends Phaser.Scene {
         } else if (this.equippedWeapon.key === 'nunchaku') {
             g.lineStyle(1, 0xd6d3d1, 1).beginPath().moveTo(ex, ey).lineTo(ex + 5, ey + 5).strokePath();
             g.lineStyle(3, 0x8b5a2b, 1).beginPath().moveTo(ex + 5, ey + 5).lineTo(ex + 11, ey + 11).strokePath();
+        } else if (this.equippedWeapon.key === 'kamas') {
+            // Twin handles and opposing crescent blades make the paired weapon
+            // readable even at the map's 32px character scale.
+            const perpendicularX = -vector[1], perpendicularY = vector[0];
+            const secondX = hx + perpendicularX * 5, secondY = hy + perpendicularY * 5;
+            const secondEndX = ex + perpendicularX * 5, secondEndY = ey + perpendicularY * 5;
+            g.lineStyle(3, 0x8b5a2b, 1).beginPath()
+                .moveTo(hx, hy).lineTo(ex, ey)
+                .moveTo(secondX, secondY).lineTo(secondEndX, secondEndY).strokePath();
+            g.lineStyle(2, 0xdce6ee, 1).beginPath()
+                .moveTo(ex, ey).lineTo(ex + perpendicularX * 7 - vector[0] * 3, ey + perpendicularY * 7 - vector[1] * 3)
+                .moveTo(secondEndX, secondEndY).lineTo(secondEndX - perpendicularX * 7 - vector[0] * 3, secondEndY - perpendicularY * 7 - vector[1] * 3).strokePath();
+            if (attacking) {
+                g.lineStyle(1, 0xffd35c, 0.9).beginPath()
+                    .moveTo(x - 12, y - 14).lineTo(x + 12, y + 8)
+                    .moveTo(x - 12, y + 8).lineTo(x + 12, y - 14).strokePath();
+            }
         }
         g.setDepth(y + 3);
     }
