@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import { createCharacterTextures } from '../art/characters.js';
 
+// Files copied from public/ keep stable names. Adding the deployment SHA makes
+// browsers fetch the matching art after every GitHub Pages release.
+const asset = path => `${path}?v=${__APP_VERSION__}`;
+
 export default class BootScene extends Phaser.Scene {
 
     constructor() {
@@ -11,7 +15,7 @@ export default class BootScene extends Phaser.Scene {
 
         this.load.spritesheet(
             'martin',
-            'assets/player/martin.png',
+            asset('assets/player/martin.png'),
             {
                 frameWidth: 32,
                 frameHeight: 48
@@ -20,30 +24,30 @@ export default class BootScene extends Phaser.Scene {
 
         this.load.spritesheet(
             'guard',
-            'assets/player/guard.png',
+            asset('assets/player/guard.png'),
             {
                 frameWidth: 32,
                 frameHeight: 48
             }
         );
-        this.load.image('tiles', 'assets/tiles/world.png');
-        this.load.image('dojo', 'assets/tiles/dojo.png');
-        this.load.image('studio', 'assets/tiles/studio.png');
-        this.load.image('studio_cozy_drums', 'assets/tiles/studio_cozy_drums.png');
-        this.load.image('weapon_rack', 'assets/tiles/weapon_rack.png');
-        this.load.spritesheet('torii', 'assets/tiles/torii.png', {
+        this.load.image('tiles', asset('assets/tiles/world.png'));
+        this.load.image('dojo', asset('assets/tiles/dojo.png'));
+        this.load.image('studio', asset('assets/tiles/studio.png'));
+        this.load.image('studio_cozy_drums', asset('assets/tiles/studio_cozy_drums.png'));
+        this.load.image('weapon_rack', asset('assets/tiles/weapon_rack.png'));
+        this.load.spritesheet('torii', asset('assets/tiles/torii.png'), {
             frameWidth: 96,
             frameHeight: 96
         });
-        this.load.spritesheet('student_yellow', 'assets/player/student_yellow.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('student_orange', 'assets/player/student_orange.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('student_green', 'assets/player/student_green.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('student_blue', 'assets/player/student_blue.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('student_brown', 'assets/player/student_brown.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('martin_casual', 'assets/player/martin_casual.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('martin_casual_headphones', 'assets/player/martin_casual_headphones.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('braian_casual', 'assets/player/braian_casual.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.tilemapTiledJSON('villa', 'assets/maps/villa_arias.json');
+        this.load.spritesheet('student_yellow', asset('assets/player/student_yellow.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('student_orange', asset('assets/player/student_orange.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('student_green', asset('assets/player/student_green.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('student_blue', asset('assets/player/student_blue.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('student_brown', asset('assets/player/student_brown.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('martin_casual', asset('assets/player/martin_casual.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('martin_casual_headphones', asset('assets/player/martin_casual_headphones.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('braian_casual', asset('assets/player/braian_casual.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.tilemapTiledJSON('villa', asset('assets/maps/villa_arias.json'));
 
     }
 
