@@ -31,7 +31,7 @@ export default class StudioScene extends Phaser.Scene {
 
         // Spawn Braian (NPC) in the center of the Persian rug (320, 420)
         this.npcs = [
-            new NPC(this, 320, 420, 'braian_casual', 'Braian', [
+            new NPC(this, 320, 420, 'braian_casual', 'Tecnico', [
                 '¡Hola, Martin! Bienvenido a mi estudio de grabación.',
                 'Aquí es donde ocurre la magia de la música.'
             ], '')
@@ -131,7 +131,7 @@ export default class StudioScene extends Phaser.Scene {
         let promptY = 0;
 
         if (distToBraian < 50 && !this.dialogSystem.visible) {
-            activePrompt = "Pulsa E para hablar con Braian";
+            activePrompt = "Pulsa E para hablar con Tecnico";
             promptX = this.npcs[0].x;
             promptY = this.npcs[0].y - 35;
         } else if (distToComputer < 50 && !this.dialogSystem.visible) {

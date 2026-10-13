@@ -5,6 +5,7 @@ import NPC from "../npc/NPC.js";
 import DialogSystem from "../npc/DialogSystem.js";
 import Inventory from "../ui/Inventory.js";
 import GameManager from "../managers/GameManager.js";
+import DojoCombat from "../combat/DojoCombat.js";
 
 export default class WorldScene extends Phaser.Scene {
 
@@ -35,7 +36,7 @@ export default class WorldScene extends Phaser.Scene {
         this.dialogSystem = new DialogSystem(this);
 
         this.npcs = [
-            new NPC(this, 320, 320, 'guard', 'Elias', [
+            new NPC(this, 320, 320, 'guard', 'Sensei', [
                 'Bienvenido al Dojo'
             ], '')
         ];
@@ -83,7 +84,7 @@ export default class WorldScene extends Phaser.Scene {
         this.promptBox.on('pointerdown', () => {
             this.handleInteraction();
         });
-        this.promptText = this.add.text(320, 280, "Pulsa E para hablar con Elias", {
+        this.promptText = this.add.text(320, 280, "Pulsa E para hablar con Sensei", {
             fontSize: "9px",
             color: "#ffffff",
             fontFamily: "monospace"
@@ -91,14 +92,18 @@ export default class WorldScene extends Phaser.Scene {
 
         this.eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
         this.qKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
-        this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+        this.fKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 
         this.eliasState = 'idle'; // 'idle', 'talked', 'walking_away', 'training'
         this.isDoingPushups = false;
+        this.combat = new DojoCombat(this);
     }
 
     update() {
-        if (this.isDoingPushups) {
+        this.combat.update();
+        if (this.combat.playerBusy || this.toriiOpened) {
+            // Combat controls attack recovery and the brief hit recoil.
+        } else if (this.isDoingPushups) {
             this.player.setVelocity(0, 0);
         } else {
             const keys = this.inputManager.getInputState();
@@ -122,7 +127,7 @@ export default class WorldScene extends Phaser.Scene {
         let promptY = 0;
 
         if (distToElias < 50 && !this.dialogSystem.visible) {
-            activePrompt = "Pulsa E para hablar con Elias";
+            activePrompt = "Pulsa E para hablar con Sensei";
             promptX = this.npcs[0].x;
             promptY = this.npcs[0].y - 35;
         } else if (distToRack < 50 && !this.dialogSystem.visible) {
@@ -152,8 +157,8 @@ export default class WorldScene extends Phaser.Scene {
             }
         }
 
-        // Handle P Key Interaction (Martin doing push-ups)
-        if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
+        // F preserves push-ups; P and O are now combat controls.
+        if (Phaser.Input.Keyboard.JustDown(this.fKey) && !this.combat.playerBusy && !this.toriiOpened) {
             this.isDoingPushups = !this.isDoingPushups;
             if (this.isDoingPushups) {
                 this.player.setVelocity(0, 0);
@@ -211,6 +216,7 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     handleInteraction() {
+        if (this.combat.playerBusy || this.toriiOpened) return;
         const distToElias = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToRack = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.weaponRack.x, this.weaponRack.y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
@@ -225,6 +231,7 @@ export default class WorldScene extends Phaser.Scene {
                 y: this.weaponRack.y + 15
             });
         } else if (distToTorii < 80 && !this.toriiOpened) {
+            this.combat.stop();
             this.toriiOpened = true;
             this.toriiGate.play('torii-open');
             this.physics.world.disableBody(this.toriiGate.body); // disable collision so player can walk through!
@@ -247,7 +254,7 @@ export default class WorldScene extends Phaser.Scene {
         }
 
         this.dialogSystem.showDialog(nearby);
-        if (nearby.name === 'Elias') {
+        if (nearby.name === 'Sensei') {
             this.eliasState = 'talked';
         }
     }
