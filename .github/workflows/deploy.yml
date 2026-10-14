@@ -53,10 +53,13 @@ jobs:
           for (const name of ['Sensei', 'Tecnico']) {
             assert.ok(code.includes(`Pulsa E para hablar con ${name}`), `Missing ${name}`);
           }
+          assert.ok(code.includes('Kamas'), 'Missing kamas in the published game');
           for (const name of ['Elias', 'Braian']) {
             assert.ok(!code.includes(`Pulsa E para hablar con ${name}`), `Old name: ${name}`);
           }
-          for (const asset of ['tiles/dojo.png', 'tiles/studio.png', 'player/guard.png', 'player/martin.png']) {
+          for (const asset of ['tiles/dojo.png', 'tiles/studio.png', 'player/guard.png', 'player/martin.png',
+            'character-art/martin.png', 'character-art/sensei.png',
+            'character-art/technician.png', 'character-art/student.png']) {
             assert.ok(existsSync(`dist/assets/${asset}`), `Missing ${asset}`);
           }
           NODE

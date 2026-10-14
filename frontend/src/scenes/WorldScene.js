@@ -335,7 +335,30 @@ export default class WorldScene extends Phaser.Scene {
         const vector = direction === 'left' ? [-1, 0] : direction === 'right' ? [1, 0]
             : direction === 'up' ? [0, -1] : [0, 1];
         const attacking = this.combat.actions.get(this.player)?.type === 'punch';
-        const length = this.equippedWeapon.key === 'bo' ? 27 : this.equippedWeapon.key === 'nunchaku' ? 22 : this.equippedWeapon.key === 'kamas' ? 17 : 14;
+        if (this.equippedWeapon.key === 'kamas') {
+            const sideX = -vector[1], sideY = vector[0];
+            const handX = x + vector[0] * 7, handY = y - 5 + vector[1] * 7;
+            for (const side of [-1, 1]) {
+                const bx = handX + sideX * side * 5, by = handY + sideY * side * 5;
+                const neckX = bx + vector[0] * 12, neckY = by + vector[1] * 12;
+                const tipX = neckX + sideX * side * 9 - vector[0] * 4;
+                const tipY = neckY + sideY * side * 9 - vector[1] * 4;
+                g.lineStyle(4, 0x68432c, 1).beginPath().moveTo(bx, by).lineTo(neckX, neckY).strokePath();
+                g.lineStyle(2, 0xdfecf3, 1).beginPath().moveTo(neckX, neckY)
+                    .lineTo(neckX + sideX * side * 5 + vector[0] * 3, neckY + sideY * side * 5 + vector[1] * 3)
+                    .lineTo(tipX, tipY).strokePath();
+                g.lineStyle(1, 0xff6a65, 1).beginPath().moveTo(bx, by)
+                    .lineTo(bx + vector[0] * 5, by + vector[1] * 5).strokePath();
+            }
+            if (attacking) {
+                g.lineStyle(2, 0xffd35c, 0.9).beginPath()
+                    .moveTo(x - 14, y - 16).lineTo(x + 14, y + 10)
+                    .moveTo(x - 14, y + 10).lineTo(x + 14, y - 16).strokePath();
+            }
+            g.setDepth(y + 3);
+            return;
+        }
+        const length = this.equippedWeapon.key === 'bo' ? 27 : this.equippedWeapon.key === 'nunchaku' ? 22 : 14;
         const extension = attacking ? 1.65 : 1;
         const hx = x + vector[0] * 8, hy = y - 3 + vector[1] * 8;
         const ex = hx + vector[0] * length * extension + (vector[0] === 0 ? length * 0.55 : 0);
@@ -352,23 +375,6 @@ export default class WorldScene extends Phaser.Scene {
         } else if (this.equippedWeapon.key === 'nunchaku') {
             g.lineStyle(1, 0xd6d3d1, 1).beginPath().moveTo(ex, ey).lineTo(ex + 5, ey + 5).strokePath();
             g.lineStyle(3, 0x8b5a2b, 1).beginPath().moveTo(ex + 5, ey + 5).lineTo(ex + 11, ey + 11).strokePath();
-        } else if (this.equippedWeapon.key === 'kamas') {
-            // Twin handles and opposing crescent blades make the paired weapon
-            // readable even at the map's 32px character scale.
-            const perpendicularX = -vector[1], perpendicularY = vector[0];
-            const secondX = hx + perpendicularX * 5, secondY = hy + perpendicularY * 5;
-            const secondEndX = ex + perpendicularX * 5, secondEndY = ey + perpendicularY * 5;
-            g.lineStyle(3, 0x8b5a2b, 1).beginPath()
-                .moveTo(hx, hy).lineTo(ex, ey)
-                .moveTo(secondX, secondY).lineTo(secondEndX, secondEndY).strokePath();
-            g.lineStyle(2, 0xdce6ee, 1).beginPath()
-                .moveTo(ex, ey).lineTo(ex + perpendicularX * 7 - vector[0] * 3, ey + perpendicularY * 7 - vector[1] * 3)
-                .moveTo(secondEndX, secondEndY).lineTo(secondEndX - perpendicularX * 7 - vector[0] * 3, secondEndY - perpendicularY * 7 - vector[1] * 3).strokePath();
-            if (attacking) {
-                g.lineStyle(1, 0xffd35c, 0.9).beginPath()
-                    .moveTo(x - 12, y - 14).lineTo(x + 12, y + 8)
-                    .moveTo(x - 12, y + 8).lineTo(x + 12, y - 14).strokePath();
-            }
         }
         g.setDepth(y + 3);
     }

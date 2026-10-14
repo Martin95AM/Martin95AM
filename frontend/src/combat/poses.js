@@ -1,5 +1,5 @@
 import { DIRECTIONS } from './rules.mjs';
-import { drawCharacter } from '../art/characters.js';
+import { drawIllustratedFrame, illustratedFrames } from '../art/illustrated.js';
 
 export function createCombatPoses(scene) {
     for (const character of ['guard', 'martin']) {
@@ -10,7 +10,7 @@ export function createCombatPoses(scene) {
                 const texture = scene.textures.createCanvas(key, 192, 192);
                 texture.context.save();
                 texture.context.translate(48, 24);
-                drawCharacter(texture.context, character, direction, pose);
+                drawIllustratedFrame(texture.context, illustratedFrames.get(character), direction, pose);
                 texture.context.restore();
                 texture.refresh();
             }

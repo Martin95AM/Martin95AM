@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { createCharacterTextures } from '../art/characters.js';
+import { createIllustratedTextures } from '../art/illustrated.js';
 
 // Files copied from public/ keep stable names. Adding the deployment SHA makes
 // browsers fetch the matching art after every GitHub Pages release.
@@ -12,6 +12,10 @@ export default class BootScene extends Phaser.Scene {
     }
 
     preload() {
+
+        for (const name of ['martin', 'sensei', 'technician', 'student']) {
+            this.load.image(`art-${name}`, asset(`assets/character-art/${name}.png`));
+        }
 
         this.load.spritesheet(
             'martin',
@@ -53,7 +57,7 @@ export default class BootScene extends Phaser.Scene {
 
     create() {
 
-        createCharacterTextures(this);
+        createIllustratedTextures(this);
         this.createAnimations();
         const studioPreview = import.meta.env.DEV && ['studio', 'drums'].includes(new URLSearchParams(window.location.search).get('preview'));
         this.scene.start(studioPreview ? 'StudioScene' : 'MenuScene');
