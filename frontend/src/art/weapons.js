@@ -1,17 +1,37 @@
 // Small, readable silhouettes based on the approved dojo arsenal sheet.
 // All points are relative to the fighter's facing direction, so the same
 // details work in the world and in the equipment menu.
-export function drawWeapon(graphics, key, x, y, direction = 'right', attacking = false, scale = 1, handSpacing = null) {
+export function drawWeapon(graphics, key, x, y, direction = 'right', attacking = false, scale = 1, handAnchors = null) {
     const facing = {
         right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1]
     }[direction] || [1, 0];
     const side = [-facing[1], facing[0]];
-    const attachedToFists = handSpacing !== null;
-    let anchorX = x;
-    const holdInHand = hand => { if (attachedToFists) anchorX = x + hand * handSpacing; };
+    const primaryHand = direction === 'left' ? -1 : 1;
+    const paired = key === 'sai' || key === 'tonfa' || key === 'kamas';
+    const attachedToFists = handAnchors !== null;
+    let anchorX = x, anchorY = y;
+    let activeFacing = facing, activeSide = side;
+    const holdInHand = hand => {
+        if (!attachedToFists) return;
+        const grip = typeof handAnchors === 'number'
+            ? { x: hand * handAnchors, y: 0 } : handAnchors[hand];
+        anchorX = x + grip.x;
+        anchorY = y + grip.y;
+        // Paired weapons have separate trajectories, so the rear weapon does
+        // not visually merge with the one thrust from the leading hand.
+        activeFacing = paired && hand !== primaryHand ? {
+            right: [0.65, -0.76], left: [-0.65, -0.76],
+            up: [-0.45, -0.89], down: [-0.45, 0.89]
+        }[direction] : facing;
+        activeSide = [-activeFacing[1], activeFacing[0]];
+    };
+    const resetAnchor = () => {
+        anchorX = x; anchorY = y;
+        activeFacing = facing; activeSide = side;
+    };
     const point = (forward, sideways) => ({
-        x: anchorX + (facing[0] * forward + side[0] * sideways) * scale,
-        y: y + (facing[1] * forward + side[1] * sideways) * scale
+        x: anchorX + (activeFacing[0] * forward + activeSide[0] * sideways) * scale,
+        y: anchorY + (activeFacing[1] * forward + activeSide[1] * sideways) * scale
     });
     const line = (coords, width, color, alpha = 1) => {
         graphics.lineStyle(Math.max(1, width * scale), color, alpha);
@@ -73,7 +93,7 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
                 line([[14, lateral + wing * 4], [17, lateral + wing * 3]], 1, 0xf4f8f7);
             }
         }
-        anchorX = x;
+        resetAnchor();
         if (attacking) arc([[26, -4], [31, 0], [26, 4]], 2);
         break;
     }
@@ -91,7 +111,7 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
             line([[4, lateral - 2], [6, lateral + 2]], 2, 0xa83237);
             line([[7, lateral - 2], [9, lateral + 2]], 1, 0xe36b58);
         }
-        anchorX = x;
+        resetAnchor();
         if (attacking) arc([[20, -12], [28, -9], [31, 0], [28, 9], [20, 12]], 2);
         break;
     }
@@ -127,7 +147,7 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
             line([[16 + push, lateral + outward * 3], [19 + push, lateral + outward * 8],
                 [17 + push, lateral + outward * 11]], 1, 0xf6fbf7);
         }
-        anchorX = x;
+        resetAnchor();
         if (attacking) {
             arc([[16, -16], [24, -10], [30, -1]], 2);
             arc([[16, 16], [24, 10], [30, 1]], 2);

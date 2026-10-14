@@ -8,6 +8,7 @@ import GameManager from "../managers/GameManager.js";
 import DojoCombat from "../combat/DojoCombat.js";
 import { ART_SCALE } from "../art/characters.js";
 import { drawWeapon } from "../art/weapons.js";
+import { combatHandOffsets } from "../combat/poses.js";
 
 export default class WorldScene extends Phaser.Scene {
 
@@ -336,15 +337,16 @@ export default class WorldScene extends Phaser.Scene {
     drawEquippedWeapon() {
         const g = this.weaponGraphics.clear();
         if (!this.equippedWeapon || this.toriiOpened) return;
-        const { x, y, direction } = this.player;
-        const attacking = this.combat.actions.get(this.player)?.type === 'punch';
-        // The illustrated fighter's fists sit about 9 px either side of the
-        // sprite center and 2 px below it; weapon size must not move the grips.
+        const { x, y } = this.player;
+        const action = this.combat.actions.get(this.player);
+        const armedAction = action?.type === 'punch' ? action : null;
+        const direction = armedAction?.direction || this.player.direction;
         const scale = {
             bo: 0.72, sai: 0.70, tonfa: 0.70, nunchaku: 0.67, kamas: 0.62
         }[this.equippedWeapon.key];
-        const punchShift = attacking ? (direction === 'left' ? -2 : 2) : 0;
-        drawWeapon(g, this.equippedWeapon.key, x + punchShift, y + 2, direction, attacking, scale, 9);
+        const grips = armedAction ? combatHandOffsets(direction, armedAction.phase) : 9;
+        drawWeapon(g, this.equippedWeapon.key, x, armedAction ? y : y + 2,
+            direction, armedAction?.phase === 'strike', scale, grips);
         g.setDepth(y + 3);
     }
 

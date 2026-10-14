@@ -56,11 +56,12 @@ export default class DojoCombat {
         return this.actions.has(this.player) || this.scene.time.now < this.stunnedUntil;
     }
 
-    showPose(actor, pose, direction) {
+    showPose(actor, pose, direction, phase = 'strike') {
         const visual = this.visuals.get(actor);
         const character = actor === this.player ? 'martin' : 'guard';
         actor.setVisible(false);
-        visual.setTexture(`${character}-${direction}-${pose}`).setVisible(true);
+        const animation = pose === 'block' ? 'punch-windup' : `${pose}-${phase}`;
+        visual.setTexture(`${character}-${direction}-${animation}`).setVisible(true);
         visual.setPosition(actor.x, actor.y).setDepth(actor.y);
     }
 
@@ -82,9 +83,10 @@ export default class DojoCombat {
         const strike = weapon
             ? { ...STRIKES.punch, reach: weapon.reach, cooldown: weapon.cooldown, windup: weapon.windup, duration: weapon.duration }
             : STRIKES[type];
-        this.actions.set(actor, { target, type, direction, started: now, resolved: false, strike, weapon });
+        this.actions.set(actor, { target, type, direction, started: now, resolved: false,
+            phase: 'windup', strike, weapon });
         this.readyAt.set(actor, now + strike.cooldown);
-        this.showPose(actor, 'block', direction);
+        this.showPose(actor, type, direction, 'windup');
     }
 
     update() {
@@ -111,12 +113,18 @@ export default class DojoCombat {
             const elapsed = now - action.started;
             if (!action.resolved && elapsed >= strike.windup) {
                 action.resolved = true;
-                this.showPose(actor, action.type, action.direction);
+                action.phase = 'strike';
+                this.showPose(actor, action.type, action.direction, 'strike');
                 if (canHit(actor, action.target, action.direction, strike.reach)) {
                     this.hit(actor, action.target, action.direction);
                 } else {
                     this.updateHud('El golpe no alcanzó. Acercate y mirá hacia tu rival.');
                 }
+            }
+            const recoveryAt = strike.windup + Math.min(100, (strike.duration - strike.windup) / 2);
+            if (action.phase === 'strike' && elapsed >= recoveryAt) {
+                action.phase = 'recover';
+                this.showPose(actor, action.type, action.direction, 'recover');
             }
             if (elapsed >= strike.duration) {
                 this.restore(actor);

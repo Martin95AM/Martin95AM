@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { drawWeapon } from './weapons.js';
+import { combatHandOffsets } from '../combat/poses.js';
 
 class RecordingGraphics {
     paths = [];
@@ -39,6 +40,26 @@ for (const [key, { scale, handle, paired }] of Object.entries(weapons)) {
                 const fists = paired ? [[91, 100], [109, 100]]
                     : [[direction === 'left' ? 91 : 109, 100]];
                 for (const fist of fists) {
+                    const distance = Math.min(...handles.flatMap(path => path.points.slice(1).map((point, index) =>
+                        distanceToSegment(fist, path.points[index], point))));
+                    assert.ok(distance < 1.2, `${key} grip is ${distance.toFixed(1)} px from ${fist}`);
+                }
+            });
+        }
+    }
+}
+
+for (const [key, { scale, handle, paired }] of Object.entries(weapons)) {
+    for (const direction of ['right', 'left', 'up', 'down']) {
+        for (const phase of ['windup', 'strike', 'recover']) {
+            test(`${key} follows the moving fist facing ${direction} in ${phase}`, () => {
+                const graphics = new RecordingGraphics();
+                const hands = combatHandOffsets(direction, phase);
+                drawWeapon(graphics, key, 100, 100, direction, phase === 'strike', scale, hands);
+                const handles = graphics.paths.filter(path => path.color === handle);
+                const primaryHand = direction === 'left' ? -1 : 1;
+                for (const hand of paired ? [-1, 1] : [primaryHand]) {
+                    const fist = [100 + hands[hand].x, 100 + hands[hand].y];
                     const distance = Math.min(...handles.flatMap(path => path.points.slice(1).map((point, index) =>
                         distanceToSegment(fist, path.points[index], point))));
                     assert.ok(distance < 1.2, `${key} grip is ${distance.toFixed(1)} px from ${fist}`);
