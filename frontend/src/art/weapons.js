@@ -1,13 +1,16 @@
 // Small, readable silhouettes based on the approved dojo arsenal sheet.
 // All points are relative to the fighter's facing direction, so the same
 // details work in the world and in the equipment menu.
-export function drawWeapon(graphics, key, x, y, direction = 'right', attacking = false, scale = 1) {
+export function drawWeapon(graphics, key, x, y, direction = 'right', attacking = false, scale = 1, handSpacing = null) {
     const facing = {
         right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1]
     }[direction] || [1, 0];
     const side = [-facing[1], facing[0]];
+    const attachedToFists = handSpacing !== null;
+    let anchorX = x;
+    const holdInHand = hand => { if (attachedToFists) anchorX = x + hand * handSpacing; };
     const point = (forward, sideways) => ({
-        x: x + (facing[0] * forward + side[0] * sideways) * scale,
+        x: anchorX + (facing[0] * forward + side[0] * sideways) * scale,
         y: y + (facing[1] * forward + side[1] * sideways) * scale
     });
     const line = (coords, width, color, alpha = 1) => {
@@ -42,7 +45,8 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
     switch (key) {
     case 'bo': {
         // Long wooden staff, warm grain, red bands and brass end caps.
-        const lateral = 6;
+        holdInHand(direction === 'left' ? -1 : 1);
+        const lateral = attachedToFists ? 0 : 6;
         line([[-17, lateral], [31 + push, lateral]], 6, 0x493020);
         line([[-16, lateral], [30 + push, lateral]], 4, 0x9a6337);
         line([[-14, lateral - 1], [28 + push, lateral - 1]], 1, 0xc99454);
@@ -57,7 +61,9 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
         break;
     }
     case 'sai': {
-        for (const lateral of [-8, 8]) {
+        for (const hand of [-1, 1]) {
+            holdInHand(hand);
+            const lateral = attachedToFists ? 0 : hand * 8;
             grip(1, 9, lateral, 3);
             line([[8, lateral], [21 + push, lateral]], 3, 0x53616d);
             line([[9, lateral - 1], [20 + push, lateral - 1]], 1, 0xe4eef3);
@@ -67,39 +73,48 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
                 line([[14, lateral + wing * 4], [17, lateral + wing * 3]], 1, 0xf4f8f7);
             }
         }
+        anchorX = x;
         if (attacking) arc([[26, -4], [31, 0], [26, 4]], 2);
         break;
     }
     case 'tonfa': {
-        for (const lateral of [-8, 8]) {
+        for (const hand of [-1, 1]) {
+            holdInHand(hand);
+            const lateral = attachedToFists ? 0 : hand * 8;
             line([[0, lateral], [20 + push, lateral]], 6, 0x3b2b24);
             line([[1, lateral], [19 + push, lateral]], 4, 0x805238);
             line([[2, lateral - 1], [18 + push, lateral - 1]], 1, 0xbd8250);
             // The perpendicular handles make the pair unmistakably tonfa.
-            const outward = lateral < 0 ? -1 : 1;
+            const outward = side[0] === -1 ? -hand : hand;
             line([[8, lateral], [8, lateral + outward * 7]], 4, 0x3b2b24);
             line([[8, lateral + outward * 2], [8, lateral + outward * 6]], 2, 0xa86b42);
             line([[4, lateral - 2], [6, lateral + 2]], 2, 0xa83237);
             line([[7, lateral - 2], [9, lateral + 2]], 1, 0xe36b58);
         }
+        anchorX = x;
         if (attacking) arc([[20, -12], [28, -9], [31, 0], [28, 9], [20, 12]], 2);
         break;
     }
     case 'nunchaku': {
-        grip(1, 12, 3, 4);
-        line([[11, 3], [15, 4], [18, 6], [20, 7]], 2, 0x42515b);
-        line([[12, 2], [16, 3], [19, 5], [21, 6]], 1, 0xdce6ea);
-        const end = attacking ? [[20, 7], [30, -1]] : [[20, 7], [29, 13]];
+        holdInHand(direction === 'left' ? -1 : 1);
+        const lateral = attachedToFists ? 0 : 3;
+        grip(1, 12, lateral, 4);
+        line([[11, lateral], [15, lateral + 1], [18, lateral + 3], [20, lateral + 4]], 2, 0x42515b);
+        line([[12, lateral - 1], [16, lateral], [19, lateral + 2], [21, lateral + 3]], 1, 0xdce6ea);
+        const end = attacking ? [[20, lateral + 4], [30, lateral - 4]]
+            : [[20, lateral + 4], [29, lateral + 10]];
         line(end, 6, 0x402d25);
         line(end, 4, 0x9c653b);
         line([[end[1][0] - 3, end[1][1] - (attacking ? -2 : 2)], end[1]], 2, 0xa82e35);
-        line([[2, 0], [4, 6]], 2, 0xc49a55);
+        line([[2, lateral - 3], [4, lateral + 3]], 2, 0xc49a55);
         if (attacking) arc([[17, -11], [26, -11], [34, -4], [36, 5], [31, 13]], 2);
         break;
     }
     case 'kamas': {
-        for (const lateral of [-10, 10]) {
-            const outward = lateral < 0 ? -1 : 1;
+        for (const hand of [-1, 1]) {
+            holdInHand(hand);
+            const lateral = attachedToFists ? 0 : hand * 10;
+            const outward = side[0] === -1 ? -hand : hand;
             grip(1, 14 + push, lateral, 3);
             line([[13 + push, lateral - 2], [13 + push, lateral + 2]], 2, 0xd0ad66);
             // Broad steel crescent with an inward cutting edge, not a V-shaped line.
@@ -112,6 +127,7 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
             line([[16 + push, lateral + outward * 3], [19 + push, lateral + outward * 8],
                 [17 + push, lateral + outward * 11]], 1, 0xf6fbf7);
         }
+        anchorX = x;
         if (attacking) {
             arc([[16, -16], [24, -10], [30, -1]], 2);
             arc([[16, 16], [24, 10], [30, 1]], 2);

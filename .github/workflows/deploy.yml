@@ -35,8 +35,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Test combat rules
-        run: node --test frontend/src/combat/rules.test.mjs
+      - name: Test combat and weapon grip rules
+        run: node --test frontend/src/combat/rules.test.mjs frontend/src/art/weapons.test.mjs
 
       - name: Build
         run: npm run build

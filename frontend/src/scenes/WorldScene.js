@@ -338,12 +338,13 @@ export default class WorldScene extends Phaser.Scene {
         if (!this.equippedWeapon || this.toriiOpened) return;
         const { x, y, direction } = this.player;
         const attacking = this.combat.actions.get(this.player)?.type === 'punch';
-        // Anchor the grips near the illustrated fighter's hands (the sprite is
-        // 32×48 in world space), rather than above the head on upward attacks.
+        // The illustrated fighter's fists sit about 9 px either side of the
+        // sprite center and 2 px below it; weapon size must not move the grips.
         const scale = {
             bo: 0.72, sai: 0.70, tonfa: 0.70, nunchaku: 0.67, kamas: 0.62
         }[this.equippedWeapon.key];
-        drawWeapon(g, this.equippedWeapon.key, x, y + 8, direction, attacking, scale);
+        const punchShift = attacking ? (direction === 'left' ? -2 : 2) : 0;
+        drawWeapon(g, this.equippedWeapon.key, x + punchShift, y + 2, direction, attacking, scale, 9);
         g.setDepth(y + 3);
     }
 
