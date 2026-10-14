@@ -91,7 +91,7 @@ const EYE_PUPIL = [20, 20, 30, 255];
 const TRANSPARENT = [0, 0, 0, 0];
 
 function getCasualPixel(lx, ly, direction, walkStep, isTaller, capColor, hairColor) {
-    // If taller (Braian), we shift the head and torso UP by 2 pixels, making him taller!
+    // If taller (the technician), shift the head and torso up by 2 pixels.
     const tShift = isTaller ? 2 : 0;
 
     // --- CAP (y: 4 to 9, x: 8 to 23) ---
@@ -272,8 +272,8 @@ const martinCasualPng = createPng(128, 192, (x, y) => {
     return getCasualPixel(lx, ly, direction, walkStep, false, [220, 40, 40, 255], [90, 50, 30, 255]); // Red cap, brown hair
 });
 
-// Generate Braian Casual Spritesheet (128x192)
-const braianCasualPng = createPng(128, 192, (x, y) => {
+// Generate technician casual spritesheet (128x192)
+const tecnicoCasualPng = createPng(128, 192, (x, y) => {
     const col = Math.floor(x / 32);
     const row = Math.floor(y / 48);
     const lx = x % 32;
@@ -287,5 +287,5 @@ const braianCasualPng = createPng(128, 192, (x, y) => {
 });
 
 fs.writeFileSync('frontend/public/assets/player/martin_casual.png', martinCasualPng);
-fs.writeFileSync('frontend/public/assets/player/braian_casual.png', braianCasualPng);
-console.log('Successfully generated casual outfits for Martin and Braian!');
+fs.writeFileSync('frontend/public/assets/player/tecnico_casual.png', tecnicoCasualPng);
+console.log('Successfully generated casual outfits for Martin and the technician!');

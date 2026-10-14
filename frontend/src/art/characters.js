@@ -20,7 +20,7 @@ const studentPalettes = {
 
 export function drawCharacter(ctx, character, direction = 'down', pose = 'idle', step = 0) {
     const casual = character.includes('casual');
-    const technician = character === 'braian_casual';
+    const technician = character === 'tecnico_casual';
     const sensei = character === 'guard';
     const studentColor = character.startsWith('student_') ? character.replace('student_', '') : null;
     const student = Boolean(studentColor);
@@ -203,7 +203,7 @@ export function drawCharacter(ctx, character, direction = 'down', pose = 'idle',
 }
 
 export function createCharacterTextures(scene) {
-    for (const key of ['martin','guard','martin_casual','martin_casual_headphones','braian_casual']) {
+    for (const key of ['martin','guard','martin_casual','martin_casual_headphones','tecnico_casual']) {
         if (scene.textures.exists(key)) scene.textures.remove(key);
         const texture = scene.textures.createCanvas(key, FRAME_WIDTH * 4, FRAME_HEIGHT * 5);
         for (let frame = 0; frame < 20; frame++) {

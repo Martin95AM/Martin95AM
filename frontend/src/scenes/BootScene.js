@@ -16,6 +16,9 @@ export default class BootScene extends Phaser.Scene {
         for (const name of ['martin', 'sensei', 'technician', 'student']) {
             this.load.image(`art-${name}`, asset(`assets/character-art/${name}.png`));
         }
+        for (const name of ['martin-studio', 'martin-studio-headphones']) {
+            this.load.image(`art-${name}`, asset(`assets/character-art/${name}.png`));
+        }
 
         this.load.spritesheet(
             'martin',
@@ -50,7 +53,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.spritesheet('student_brown', asset('assets/player/student_brown.png'), { frameWidth: 32, frameHeight: 48 });
         this.load.spritesheet('martin_casual', asset('assets/player/martin_casual.png'), { frameWidth: 32, frameHeight: 48 });
         this.load.spritesheet('martin_casual_headphones', asset('assets/player/martin_casual_headphones.png'), { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('braian_casual', asset('assets/player/braian_casual.png'), { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('tecnico_casual', asset('assets/player/tecnico_casual.png'), { frameWidth: 32, frameHeight: 48 });
         this.load.tilemapTiledJSON('villa', asset('assets/maps/villa_arias.json'));
 
     }

@@ -38,9 +38,9 @@ export default class StudioScene extends Phaser.Scene {
         this.createPianoCorner();
         this.createDrumCorner();
 
-        // Spawn Braian (NPC) in the center of the Persian rug (320, 420)
+        // Spawn the studio technician (NPC) in the center of the Persian rug (320, 420)
         this.npcs = [
-            new NPC(this, 320, 420, 'braian_casual', 'Tecnico', [
+            new NPC(this, 320, 420, 'tecnico_casual', 'Técnico', [
                 '¡Hola, Martin! Bienvenido a mi estudio de grabación.',
                 'Aquí es donde ocurre la magia de la música.'
             ], '')
@@ -165,7 +165,7 @@ export default class StudioScene extends Phaser.Scene {
         this.toriiGate.setDepth(this.toriiGate.y);
 
         // Check distance to spots
-        const distToBraian = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
+        const distToTecnico = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 180);
         const distToPiano = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pianoPosition.x, this.pianoPosition.y);
@@ -183,8 +183,8 @@ export default class StudioScene extends Phaser.Scene {
             activePrompt = "Pulsa B para tocar la batería";
             promptX = this.drumPosition.x;
             promptY = this.drumPosition.y - 78;
-        } else if (distToBraian < 50 && !this.dialogSystem.visible) {
-            activePrompt = "Pulsa E para hablar con Tecnico";
+        } else if (distToTecnico < 50 && !this.dialogSystem.visible) {
+            activePrompt = "Pulsa E para hablar con Técnico";
             promptX = this.npcs[0].x;
             promptY = this.npcs[0].y - 35;
         } else if (distToComputer < 50 && !this.dialogSystem.visible) {
@@ -209,12 +209,12 @@ export default class StudioScene extends Phaser.Scene {
 
         // Auto-close dialogue if player walks away
         if (this.dialogSystem.visible) {
-            if (distToBraian >= 60) {
+            if (distToTecnico >= 60) {
                 this.dialogSystem.hideDialog();
             }
         }
 
-        // Handle E Key Interaction (Talk to Braian)
+        // Handle E Key Interaction (Talk to the technician)
         if (Phaser.Input.Keyboard.JustDown(this.eKey)) {
             this.handleInteraction('npc');
         }
@@ -239,7 +239,7 @@ export default class StudioScene extends Phaser.Scene {
     handleInteraction(action = 'auto') {
         const distToPiano = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pianoPosition.x, this.pianoPosition.y);
         const distToDrums = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.drumPosition.x, this.drumPosition.y);
-        const distToBraian = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
+        const distToTecnico = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 180);
 
@@ -253,7 +253,7 @@ export default class StudioScene extends Phaser.Scene {
             this.drumPanel.open();
             this.promptBox.setVisible(false);
             this.promptText.setVisible(false);
-        } else if ((action === 'npc' || action === 'auto') && distToBraian < 50) {
+        } else if ((action === 'npc' || action === 'auto') && distToTecnico < 50) {
             this.dialogSystem.showDialog(this.npcs[0]);
         } else if ((action === 'computer' || action === 'auto') && distToComputer < 50) {
             this.toggleSpotify();
