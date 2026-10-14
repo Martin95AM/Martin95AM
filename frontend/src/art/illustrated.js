@@ -48,6 +48,52 @@ function rankColoredFrame(frame, key) {
     return copy;
 }
 
+// The studio uses the same illustrated Martín, with his gi repainted as a
+// dark jacket, jeans and shoes. Keep the source shading, silhouette and face.
+function studioMartinFrame(frame, headphones) {
+    const copy = document.createElement('canvas');
+    copy.width = FRAME_WIDTH; copy.height = FRAME_HEIGHT;
+    const ctx = copy.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(frame, 0, 0);
+    const pixels = ctx.getImageData(0, 0, copy.width, copy.height);
+    for (let y = 32; y < copy.height; y++) {
+        for (let x = 0; x < copy.width; x++) {
+            const i = (y * copy.width + x) * 4;
+            const r = pixels.data[i], g = pixels.data[i + 1], b = pixels.data[i + 2];
+            if (pixels.data[i + 3] < 40) continue;
+            const redBelt = x > 30 && x < 66 && y > 61 && y < 100
+                && r > 35 && g < r * 0.7 && b < r * 0.7;
+            const cloth = Math.max(r, g, b) - Math.min(r, g, b) < 60 && r > 55;
+            const skin = r > g + 25 && g > b + 8;
+            let base;
+            if (y >= 130 && skin) base = [32, 39, 51];
+            else if (redBelt || cloth) base = y < 79 ? [39, 57, 77] : [42, 67, 105];
+            else continue;
+            const shade = Math.max(0.42, Math.min(1.35, (r + g + b) / 550));
+            for (let channel = 0; channel < 3; channel++) pixels.data[i + channel] = base[channel] * shade;
+        }
+    }
+    ctx.putImageData(pixels, 0, 0);
+    // A simple shirt opening and jacket hem replace the gi's red-belt focal
+    // point while staying readable at the map's 32×48 display size.
+    ctx.fillStyle = '#1a2634';
+    ctx.beginPath(); ctx.moveTo(44, 43); ctx.lineTo(50, 43); ctx.lineTo(51, 74);
+    ctx.lineTo(44, 74); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#6d8495'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(51, 45); ctx.lineTo(51, 73); ctx.stroke();
+    ctx.fillStyle = '#24364d'; ctx.fillRect(37, 77, 23, 3);
+    if (headphones) {
+        ctx.strokeStyle = '#1b2532'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(37, 27); ctx.lineTo(37, 16);
+        ctx.quadraticCurveTo(48, 0, 59, 16); ctx.lineTo(59, 27); ctx.stroke();
+        ctx.fillStyle = '#c78a48';
+        ctx.fillRect(35, 19, 5, 11); ctx.fillRect(57, 19, 5, 11);
+        ctx.fillStyle = '#253a50';
+        ctx.fillRect(36, 21, 3, 7); ctx.fillRect(58, 21, 3, 7);
+    }
+    return copy;
+}
+
 function normalizedFrame(source) {
     const frame = document.createElement('canvas');
     frame.width = FRAME_WIDTH; frame.height = FRAME_HEIGHT;
@@ -88,7 +134,9 @@ export function createIllustratedTextures(scene) {
     for (const key of keys) {
         const sourceKey = sourceFor(key);
         if (!baseFrames.has(sourceKey)) baseFrames.set(sourceKey, normalizedFrame(sourceCanvas(scene, key)));
-        const frame = rankColoredFrame(baseFrames.get(sourceKey), key);
+        const frame = key.startsWith('martin_casual')
+            ? studioMartinFrame(baseFrames.get(sourceKey), key.endsWith('_headphones'))
+            : rankColoredFrame(baseFrames.get(sourceKey), key);
         illustratedFrames.set(key, frame);
         if (scene.textures.exists(key)) scene.textures.remove(key);
         const isStudent = key.startsWith('student_');
