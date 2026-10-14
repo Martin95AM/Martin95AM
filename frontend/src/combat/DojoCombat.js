@@ -177,10 +177,10 @@ export default class DojoCombat {
             kamas: 0xffd36c
         };
         const color = colors[weaponKey] || 0xffdf80;
-        const flash = this.scene.add.circle(target.x, target.y - 8, weaponKey ? 12 : 10, color, 0.82).setDepth(20000);
-        const marks = this.scene.add.graphics().setDepth(20001);
+        const flash = this.scene.add.circle(target.x, target.y - 8, weaponKey ? 8 : 7, color, 0.82).setDepth(20000);
+        const marks = this.scene.add.graphics().setPosition(target.x, target.y - 8).setScale(0.65).setDepth(20001);
         marks.lineStyle(weaponKey === 'bo' ? 3 : 2, color, 0.95);
-        const x = target.x, y = target.y - 8;
+        const x = 0, y = 0;
         if (weaponKey === 'kamas') {
             marks.beginPath().moveTo(x - 17, y - 14).lineTo(x - 5, y - 8).lineTo(x + 15, y + 14)
                 .moveTo(x - 17, y + 14).lineTo(x - 5, y + 8).lineTo(x + 15, y - 14).strokePath();
@@ -204,7 +204,7 @@ export default class DojoCombat {
                 .lineTo(x + 15, y + 13).strokePath();
         }
         this.scene.tweens.add({
-            targets: [flash, marks], alpha: 0, scaleX: 1.45, scaleY: 1.45, duration: 190,
+            targets: [flash, marks], alpha: 0, scaleX: 1.05, scaleY: 1.05, duration: 190,
             onComplete: () => { flash.destroy(); marks.destroy(); }
         });
     }

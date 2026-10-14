@@ -57,7 +57,7 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
         break;
     }
     case 'sai': {
-        for (const lateral of [-5, 5]) {
+        for (const lateral of [-8, 8]) {
             grip(1, 9, lateral, 3);
             line([[8, lateral], [21 + push, lateral]], 3, 0x53616d);
             line([[9, lateral - 1], [20 + push, lateral - 1]], 1, 0xe4eef3);
@@ -71,7 +71,7 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
         break;
     }
     case 'tonfa': {
-        for (const lateral of [-5, 5]) {
+        for (const lateral of [-8, 8]) {
             line([[0, lateral], [20 + push, lateral]], 6, 0x3b2b24);
             line([[1, lateral], [19 + push, lateral]], 4, 0x805238);
             line([[2, lateral - 1], [18 + push, lateral - 1]], 1, 0xbd8250);
@@ -98,7 +98,7 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
         break;
     }
     case 'kamas': {
-        for (const lateral of [-6, 6]) {
+        for (const lateral of [-10, 10]) {
             const outward = lateral < 0 ? -1 : 1;
             grip(1, 14 + push, lateral, 3);
             line([[13 + push, lateral - 2], [13 + push, lateral + 2]], 2, 0xd0ad66);

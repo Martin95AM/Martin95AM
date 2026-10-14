@@ -340,7 +340,10 @@ export default class WorldScene extends Phaser.Scene {
         const attacking = this.combat.actions.get(this.player)?.type === 'punch';
         // Anchor the grips near the illustrated fighter's hands (the sprite is
         // 32×48 in world space), rather than above the head on upward attacks.
-        drawWeapon(g, this.equippedWeapon.key, x, y + 8, direction, attacking);
+        const scale = {
+            bo: 0.72, sai: 0.70, tonfa: 0.70, nunchaku: 0.67, kamas: 0.62
+        }[this.equippedWeapon.key];
+        drawWeapon(g, this.equippedWeapon.key, x, y + 8, direction, attacking, scale);
         g.setDepth(y + 3);
     }
 
