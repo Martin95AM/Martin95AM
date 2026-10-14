@@ -174,7 +174,7 @@ export default class DojoCombat {
             sai: 0xdceaf6,
             tonfa: 0xe39a55,
             nunchaku: 0xffd35c,
-            kamas: 0xff655f
+            kamas: 0xffd36c
         };
         const color = colors[weaponKey] || 0xffdf80;
         const flash = this.scene.add.circle(target.x, target.y - 8, weaponKey ? 12 : 10, color, 0.82).setDepth(20000);
@@ -182,18 +182,26 @@ export default class DojoCombat {
         marks.lineStyle(weaponKey === 'bo' ? 3 : 2, color, 0.95);
         const x = target.x, y = target.y - 8;
         if (weaponKey === 'kamas') {
-            marks.beginPath().moveTo(x - 14, y - 12).lineTo(x + 14, y + 12)
-                .moveTo(x - 14, y + 12).lineTo(x + 14, y - 12).strokePath();
+            marks.beginPath().moveTo(x - 17, y - 14).lineTo(x - 5, y - 8).lineTo(x + 15, y + 14)
+                .moveTo(x - 17, y + 14).lineTo(x - 5, y + 8).lineTo(x + 15, y - 14).strokePath();
+            marks.lineStyle(1, 0xffffff, 0.95).beginPath()
+                .moveTo(x - 11, y - 12).lineTo(x + 12, y + 11)
+                .moveTo(x - 11, y + 12).lineTo(x + 12, y - 11).strokePath();
         } else if (weaponKey === 'nunchaku') {
             marks.strokeCircle(x, y, 15);
-            marks.beginPath().moveTo(x - 13, y + 9).lineTo(x + 12, y - 10).strokePath();
+            marks.lineStyle(1, 0xffffff, 0.9).strokeCircle(x, y, 11);
         } else if (weaponKey === 'sai') {
-            marks.beginPath().moveTo(x - 15, y - 5).lineTo(x + 15, y - 5)
-                .moveTo(x - 15, y + 5).lineTo(x + 15, y + 5).strokePath();
+            marks.beginPath().moveTo(x - 19, y - 6).lineTo(x + 15, y - 6)
+                .moveTo(x - 19, y + 6).lineTo(x + 15, y + 6)
+                .moveTo(x + 12, y - 11).lineTo(x + 18, y - 6).lineTo(x + 12, y - 1)
+                .moveTo(x + 12, y + 1).lineTo(x + 18, y + 6).lineTo(x + 12, y + 11).strokePath();
         } else if (weaponKey === 'tonfa') {
             marks.strokeRect(x - 10, y - 10, 20, 20);
+            marks.lineStyle(1, 0xffffff, 0.9).strokeRect(x - 7, y - 7, 14, 14);
         } else {
-            marks.beginPath().moveTo(x - 18, y + 8).lineTo(x + 18, y - 8).strokePath();
+            marks.beginPath().moveTo(x - 19, y - 12).lineTo(x - 4, y - 13)
+                .lineTo(x + 16, y - 5).lineTo(x + 21, y + 5)
+                .lineTo(x + 15, y + 13).strokePath();
         }
         this.scene.tweens.add({
             targets: [flash, marks], alpha: 0, scaleX: 1.45, scaleY: 1.45, duration: 190,

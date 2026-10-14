@@ -7,6 +7,7 @@ import Inventory from "../ui/Inventory.js";
 import GameManager from "../managers/GameManager.js";
 import DojoCombat from "../combat/DojoCombat.js";
 import { ART_SCALE } from "../art/characters.js";
+import { drawWeapon } from "../art/weapons.js";
 
 export default class WorldScene extends Phaser.Scene {
 
@@ -279,20 +280,24 @@ export default class WorldScene extends Phaser.Scene {
 
     createWeaponMenu() {
         this.weaponMenu = this.add.container(150, 205).setVisible(false).setDepth(25000);
-        const shadow = this.add.rectangle(3, 4, 198, 124, 0x081018, 0.45);
-        const bg = this.add.rectangle(0, 0, 198, 124, 0x111827, 0.97)
+        const shadow = this.add.rectangle(3, 4, 222, 128, 0x081018, 0.45);
+        const bg = this.add.rectangle(0, 0, 222, 128, 0x111827, 0.97)
             .setStrokeStyle(2, 0xd2ae72);
         const title = this.add.text(0, -49, 'ARSENAL DEL DOJO', {
             fontSize: '10px', color: '#ffe1a3', fontFamily: 'monospace', fontStyle: 'bold'
         }).setOrigin(0.5);
-        const options = this.add.text(-83, -34,
-            '1  BO         alcance largo\n2  SAI        rápido y preciso\n3  TONFA      defensa sólida\n4  NUNCHAKU   combo veloz\n5  KAMAS      corte cruzado', {
+        const options = this.add.text(-76, -35,
+            '1  BŌ         alcance largo\n2  SAI        doble estocada\n3  TONFA      defensa sólida\n4  NUNCHAKU   combo veloz\n5  KAMAS      corte cruzado', {
                 fontSize: '8px', color: '#e7edf2', fontFamily: 'monospace', lineSpacing: 5
             });
+        const icons = this.add.graphics();
+        ['bo', 'sai', 'tonfa', 'nunchaku', 'kamas'].forEach((key, index) => {
+            drawWeapon(icons, key, -99, -31 + index * 14, 'right', false, 0.55);
+        });
         const hint = this.add.text(0, 51, '1–5 equipar  ·  ESC cerrar', {
             fontSize: '7px', color: '#9dafc3', fontFamily: 'monospace'
         }).setOrigin(0.5);
-        this.weaponMenu.add([shadow, bg, title, options, hint]);
+        this.weaponMenu.add([shadow, bg, title, icons, options, hint]);
     }
 
     openWeaponMenu() {
@@ -332,50 +337,10 @@ export default class WorldScene extends Phaser.Scene {
         const g = this.weaponGraphics.clear();
         if (!this.equippedWeapon || this.toriiOpened) return;
         const { x, y, direction } = this.player;
-        const vector = direction === 'left' ? [-1, 0] : direction === 'right' ? [1, 0]
-            : direction === 'up' ? [0, -1] : [0, 1];
         const attacking = this.combat.actions.get(this.player)?.type === 'punch';
-        if (this.equippedWeapon.key === 'kamas') {
-            const sideX = -vector[1], sideY = vector[0];
-            const handX = x + vector[0] * 7, handY = y - 5 + vector[1] * 7;
-            for (const side of [-1, 1]) {
-                const bx = handX + sideX * side * 5, by = handY + sideY * side * 5;
-                const neckX = bx + vector[0] * 12, neckY = by + vector[1] * 12;
-                const tipX = neckX + sideX * side * 9 - vector[0] * 4;
-                const tipY = neckY + sideY * side * 9 - vector[1] * 4;
-                g.lineStyle(4, 0x68432c, 1).beginPath().moveTo(bx, by).lineTo(neckX, neckY).strokePath();
-                g.lineStyle(2, 0xdfecf3, 1).beginPath().moveTo(neckX, neckY)
-                    .lineTo(neckX + sideX * side * 5 + vector[0] * 3, neckY + sideY * side * 5 + vector[1] * 3)
-                    .lineTo(tipX, tipY).strokePath();
-                g.lineStyle(1, 0xff6a65, 1).beginPath().moveTo(bx, by)
-                    .lineTo(bx + vector[0] * 5, by + vector[1] * 5).strokePath();
-            }
-            if (attacking) {
-                g.lineStyle(2, 0xffd35c, 0.9).beginPath()
-                    .moveTo(x - 14, y - 16).lineTo(x + 14, y + 10)
-                    .moveTo(x - 14, y + 10).lineTo(x + 14, y - 16).strokePath();
-            }
-            g.setDepth(y + 3);
-            return;
-        }
-        const length = this.equippedWeapon.key === 'bo' ? 27 : this.equippedWeapon.key === 'nunchaku' ? 22 : 14;
-        const extension = attacking ? 1.65 : 1;
-        const hx = x + vector[0] * 8, hy = y - 3 + vector[1] * 8;
-        const ex = hx + vector[0] * length * extension + (vector[0] === 0 ? length * 0.55 : 0);
-        const ey = hy + vector[1] * length * extension + (vector[1] === 0 ? -length * 0.55 : 0);
-        g.lineStyle(this.equippedWeapon.key === 'bo' ? 3 : 2, this.equippedWeapon.color, 1)
-            .beginPath().moveTo(hx, hy).lineTo(ex, ey).strokePath();
-        if (this.equippedWeapon.key === 'sai') {
-            g.lineStyle(1, 0xf1f5f9, 1).beginPath()
-                .moveTo(hx - 3, hy - 2).lineTo(ex - 3, ey - 2)
-                .moveTo(hx + 3, hy + 2).lineTo(ex + 3, ey + 2).strokePath();
-        } else if (this.equippedWeapon.key === 'tonfa') {
-            g.lineStyle(2, 0x4a2c20, 1).beginPath()
-                .moveTo(hx, hy).lineTo(hx - vector[1] * 7, hy + vector[0] * 7).strokePath();
-        } else if (this.equippedWeapon.key === 'nunchaku') {
-            g.lineStyle(1, 0xd6d3d1, 1).beginPath().moveTo(ex, ey).lineTo(ex + 5, ey + 5).strokePath();
-            g.lineStyle(3, 0x8b5a2b, 1).beginPath().moveTo(ex + 5, ey + 5).lineTo(ex + 11, ey + 11).strokePath();
-        }
+        // Anchor the grips near the illustrated fighter's hands (the sprite is
+        // 32×48 in world space), rather than above the head on upward attacks.
+        drawWeapon(g, this.equippedWeapon.key, x, y + 8, direction, attacking);
         g.setDepth(y + 3);
     }
 
