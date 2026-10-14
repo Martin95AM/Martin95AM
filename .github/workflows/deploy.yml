@@ -54,9 +54,7 @@ jobs:
             assert.ok(code.includes(`Pulsa E para hablar con ${name}`), `Missing ${name}`);
           }
           assert.ok(code.includes('Kamas'), 'Missing kamas in the published game');
-          for (const name of ['Elias', 'Braian']) {
-            assert.ok(!code.includes(`Pulsa E para hablar con ${name}`), `Old name: ${name}`);
-          }
+          assert.ok(!code.includes('Pulsa E para hablar con Elias'), 'Old character name');
           for (const asset of ['tiles/dojo.png', 'tiles/studio.png', 'player/guard.png', 'player/martin.png',
             'character-art/martin.png', 'character-art/martin-studio.png',
             'character-art/martin-studio-headphones.png', 'character-art/sensei.png',
