@@ -87,7 +87,7 @@ function drawWalkingFrame(ctx, frame, direction, step, parts) {
     ];
     // Only the leg in swing flexes. Its heel rises a few pixels toward the
     // body while the planted leg stays long enough to support the weight.
-    const kneeFlex = [0, 0.07, 0.14, 0.08, 0, 0, 0, 0];
+    const kneeFlex = [0, 0.07, 0.16, 0.09, 0, 0, 0, 0];
     const phase = step % WALK_FRAMES;
     const { hip, bob } = phases[phase];
     const sideView = direction === 'left' || direction === 'right';
@@ -117,7 +117,9 @@ function drawWalkingFrame(ctx, frame, direction, step, parts) {
         ctx.translate(...pivot);
         ctx.rotate(hipAngle);
         ctx.translate(-pivot[0], -pivot[1]);
-        rotatePart(ctx, limb.lowerImage, limb.joint, kneeAngle, 1 - flex * 0.7);
+        // Perspective foreshortening lifts the heel by several display pixels
+        // at peak swing; a smaller change disappeared at the game's 1/3 scale.
+        rotatePart(ctx, limb.lowerImage, limb.joint, kneeAngle, 1 - flex * 1.8);
         ctx.drawImage(limb.upperImage, 0, 0);
         ctx.restore();
     }
