@@ -22,12 +22,14 @@
 .drum-panel .loop-sequencer { border-color:#839481; background:#142729cc; }.drum-panel .loop-grid span { color:#e4e8d8; }.drum-panel .loop-grid button { border-color:#607873; background:#294144; }.drum-panel .loop-grid button.active { background:#e5b56a; border-color:#fff0bc; }.drum-panel .loop-actions button { border-color:#c99b65; background:#415150; }.drum-panel .loop-actions button:hover { background:#657365; }
 .drum-rack-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 13px; }
 .drum-live { color: #a8e7ad; }
-.drum-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.drum-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .drum-controls fieldset { min-width: 0; margin: 0; padding: 13px; border: 1px solid #839481; border-radius: 8px; }
 .drum-controls legend { padding: 0 5px; color: #ffe0ad; font-size: 13px; font-weight: bold; }
 .drum-controls label { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin-bottom: 9px; color: #e4e8d8; font-size: 13px; }
 .drum-controls output { color: #ffe0ad; font-variant-numeric: tabular-nums; }
 .drum-controls input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: #d8a165; cursor: pointer; }
+.drum-controls input[type="range"] { height: 20px; }
+.drum-controls select { grid-column: 1 / -1; min-height: 29px; padding: 4px 7px; border: 1px solid #839481; border-radius: 5px; color: #ffe0ad; background: #203638; font: inherit; cursor: pointer; }
 .drum-footer { margin: 15px 0 0; text-align: center; letter-spacing: .06em; }
 @media (max-width: 620px) { .drum-panel { padding: 16px; }.drum-kit { gap: 8px; padding: 10px; }.drum-pad { min-height: 86px; padding: 8px 3px; }.drum-pad::before { inset: 10px 7px 28px; }.drum-pad-label { font-size: 10px; }.drum-controls { grid-template-columns: 1fr; } }
 @media (max-width: 400px) { .drum-kit { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

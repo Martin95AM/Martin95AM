@@ -26,10 +26,24 @@ export default class DrumPanel {
                         <fieldset><legend>Dinámica · compresor</legend>
                             <label>Umbral <output data-value="threshold">−18 dB</output><input data-setting="threshold" type="range" min="-50" max="0" value="-18"></label>
                             <label>Ratio <output data-value="ratio">3:1</output><input data-setting="ratio" type="range" min="1" max="12" step="0.5" value="3"></label>
+                            <label>Ataque <output data-value="attack">3 ms</output><input data-setting="attack" type="range" min="0" max="100" step="1" value="3"></label>
+                            <label>Relajación <output data-value="release">140 ms</output><input data-setting="release" type="range" min="20" max="1000" step="10" value="140"></label>
+                            <label>Ganancia <output data-value="makeup">0 dB</output><input data-setting="makeup" type="range" min="-12" max="18" step="0.5" value="0"></label>
                         </fieldset>
-                        <fieldset><legend>Espacio · sala</legend>
-                            <label>Panorama <output data-value="pan">Centro</output><input data-setting="pan" type="range" min="-1" max="1" step="0.05" value="0"></label>
+                        <fieldset><legend>Retardo · ping pong</legend>
+                            <label>Tiempo <output data-value="delayTime">1/8 · 250 ms</output><input data-setting="delayTime" type="range" min="40" max="1000" step="10" value="250"></label>
+                            <label>Rebote <output data-value="delayFeedback">35%</output><input data-setting="delayFeedback" type="range" min="0" max="0.85" step="0.01" value="0.35"></label>
+                            <label>Ancho estéreo <output data-value="delayWidth">60%</output><input data-setting="delayWidth" type="range" min="0" max="1" step="0.01" value="0.6"></label>
+                            <label>Mezcla de retardo <output data-value="delayMix">20%</output><input data-setting="delayMix" type="range" min="0" max="1" step="0.01" value="0.2"></label>
+                        </fieldset>
+                        <fieldset><legend>Filtro · mezcla</legend>
+                            <label>Frecuencia <output data-value="filterFrequency">12,0 kHz</output><input data-setting="filterFrequency" type="range" min="20" max="20000" step="10" value="12000"></label>
+                            <label>Modo <output data-value="filterType">LP</output><select data-setting="filterType" aria-label="Modo de filtro"><option value="lowpass">LP</option><option value="highpass">HP</option></select></label>
+                            <label>Señal seca <output data-value="dryMix">85%</output><input data-setting="dryMix" type="range" min="0" max="1" step="0.01" value="0.85"></label>
                             <label>Ambiente <output data-value="reverb">15%</output><input data-setting="reverb" type="range" min="0" max="1" step="0.01" value="0.15"></label>
+                        </fieldset>
+                        <fieldset><legend>Salida · sala</legend>
+                            <label>Panorama <output data-value="pan">Centro</output><input data-setting="pan" type="range" min="-1" max="1" step="0.05" value="0"></label>
                             <label>Salida <output data-value="output">−6,00 dB</output><input data-setting="output" type="range" min="-60" max="4" step="0.01" value="-6"></label>
                         </fieldset>
                     </div>
@@ -74,11 +88,16 @@ export default class DrumPanel {
         this.root.querySelectorAll('[data-setting]').forEach(input => {
             input.addEventListener('input', () => {
                 const name = input.dataset.setting;
-                const value = Number(input.value);
+                const value = input instanceof HTMLSelectElement ? input.value : Number(input.value);
                 this.engine.setSetting(name, value);
                 const labels = {
                     threshold: `${value} dB`,
                     ratio: `${value}:1`,
+                    attack: `${value} ms`, release: `${value} ms`, makeup: `${value} dB`,
+                    delayTime: `${value <= 260 ? '1/8 · ' : ''}${value} ms`,
+                    delayFeedback: `${Math.round(value * 100)}%`, delayWidth: `${Math.round(value * 100)}%`, delayMix: `${Math.round(value * 100)}%`,
+                    filterFrequency: value >= 1000 ? `${(value / 1000).toFixed(1).replace('.', ',')} kHz` : `${value} Hz`,
+                    filterType: value === 'lowpass' ? 'LP' : 'HP', dryMix: `${Math.round(value * 100)}%`,
                     pan: Math.abs(value) < 0.01 ? 'Centro' : `${Math.round(Math.abs(value) * 100)}% ${value < 0 ? 'izq.' : 'der.'}`,
                     reverb: `${Math.round(value * 100)}%`, output: `${value.toFixed(2).replace('.', ',')} dB`
                 };

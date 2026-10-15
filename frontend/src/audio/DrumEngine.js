@@ -15,7 +15,12 @@ export default class DrumEngine {
     constructor() {
         this.context = null;
         this.active = new Set();
-        this.settings = { threshold: -18, ratio: 3, pan: 0, reverb: 0.15, output: -6 };
+        this.settings = {
+            threshold: -18, ratio: 3, attack: 3, release: 140, makeup: 0,
+            delayTime: 250, delayFeedback: 0.35, delayWidth: 0.6, delayMix: 0.2,
+            filterFrequency: 12000, filterType: 'lowpass', dryMix: 0.85,
+            pan: 0, reverb: 0.15, output: -6
+        };
     }
 
     async start() {
@@ -25,17 +30,25 @@ export default class DrumEngine {
             const ctx = this.context = new AudioContextClass();
             this.input = ctx.createGain();
             this.compressor = ctx.createDynamicsCompressor();
+            this.makeup = ctx.createGain();
+            this.filter = ctx.createBiquadFilter();
             this.dry = ctx.createGain();
             this.wet = ctx.createGain();
+            this.delay = ctx.createDelay(1.1);
+            this.delayFeedback = ctx.createGain();
+            this.delayWet = ctx.createGain();
             this.panner = ctx.createStereoPanner();
             this.master = ctx.createGain();
             this.reverb = ctx.createConvolver();
             this.reverb.buffer = this.createImpulse(ctx);
             this.noiseBuffer = this.createNoise(ctx);
             this.master.gain.value = 0.72;
-            this.input.connect(this.compressor);
-            this.compressor.connect(this.dry).connect(this.panner);
-            this.compressor.connect(this.reverb).connect(this.wet).connect(this.panner);
+            this.input.connect(this.compressor).connect(this.makeup).connect(this.filter);
+            this.filter.connect(this.dry).connect(this.panner);
+            this.filter.connect(this.reverb).connect(this.wet).connect(this.panner);
+            this.filter.connect(this.delay);
+            this.delay.connect(this.delayFeedback).connect(this.delay);
+            this.delay.connect(this.delayWet).connect(this.panner);
             this.panner.connect(this.master).connect(ctx.destination);
             this.applySettings();
         }
@@ -75,11 +88,17 @@ export default class DrumEngine {
         this.compressor.threshold.setTargetAtTime(this.settings.threshold, now, 0.02);
         this.compressor.ratio.setTargetAtTime(this.settings.ratio, now, 0.02);
         this.compressor.knee.setTargetAtTime(10, now, 0.02);
-        this.compressor.attack.setTargetAtTime(0.003, now, 0.02);
-        this.compressor.release.setTargetAtTime(0.14, now, 0.02);
+        this.compressor.attack.setTargetAtTime(this.settings.attack / 1000, now, 0.02);
+        this.compressor.release.setTargetAtTime(this.settings.release / 1000, now, 0.02);
+        this.makeup.gain.setTargetAtTime(Math.pow(10, this.settings.makeup / 20), now, 0.02);
+        this.filter.type = this.settings.filterType;
+        this.filter.frequency.setTargetAtTime(this.settings.filterFrequency, now, 0.02);
+        this.delay.delayTime.setTargetAtTime(this.settings.delayTime / 1000, now, 0.02);
+        this.delayFeedback.gain.setTargetAtTime(this.settings.delayFeedback, now, 0.02);
         this.panner.pan.setTargetAtTime(this.settings.pan, now, 0.02);
-        this.dry.gain.setTargetAtTime(1 - this.settings.reverb * 0.3, now, 0.02);
+        this.dry.gain.setTargetAtTime(this.settings.dryMix, now, 0.02);
         this.wet.gain.setTargetAtTime(this.settings.reverb, now, 0.02);
+        this.delayWet.gain.setTargetAtTime(this.settings.delayMix * (0.65 + this.settings.delayWidth * 0.35), now, 0.02);
         this.master.gain.setTargetAtTime(Math.pow(10, this.settings.output / 20), now, 0.02);
     }
 
