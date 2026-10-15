@@ -82,13 +82,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
         if (vx === 0 && vy === 0) {
             this.anims.timeScale = 1;
-            if (this.anims && this.anims.exists(`${prefix}idle-${this.direction}`)) {
+            if (this.scene.anims.exists(`${prefix}idle-${this.direction}`)) {
                 this.anims.play(`${prefix}idle-${this.direction}`, true);
             }
             return;
         }
 
-        if (this.anims && this.anims.exists(`${prefix}walk-${this.direction}`)) {
+        if (this.scene.anims.exists(`${prefix}walk-${this.direction}`)) {
             // A quick, readable loop gives the run the punch of 90s action
             // games while the normal walk remains deliberate around NPCs.
             this.anims.play(`${prefix}walk-${this.direction}`, true);

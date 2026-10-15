@@ -23,8 +23,9 @@ const LEFT_ARM = {
 };
 const LEFT_LEG = {
     upper: [[34, 77], [49, 77], [49, 96], [42, 113], [24, 113], [25, 99]],
-    lower: [[24, 106], [43, 106], [39, 125], [40, 143], [10, 143], [15, 132]],
-    hip: [39, 83], joint: [32, 109]
+    lower: [[24, 106], [43, 106], [39, 125], [37, 133], [15, 133], [15, 125]],
+    foot: [[13, 128], [39, 128], [43, 137], [43, 143], [8, 143], [8, 137]],
+    hip: [39, 83], joint: [32, 109], ankle: [27, 132]
 };
 const mirror = points => points.map(([x, y]) => [FRAME_WIDTH - x, y]);
 const limbs = [
@@ -33,7 +34,7 @@ const limbs = [
         shoulder: [65, 44], joint: [69, 64], kind: 'arm' },
     { ...LEFT_LEG, kind: 'leg' },
     { upper: mirror(LEFT_LEG.upper), lower: mirror(LEFT_LEG.lower),
-        hip: [57, 83], joint: [64, 109], kind: 'leg' }
+        foot: mirror(LEFT_LEG.foot), hip: [57, 83], joint: [64, 109], ankle: [69, 132], kind: 'leg' }
 ];
 
 function path(ctx, points) {
@@ -57,7 +58,8 @@ function articulatedParts(frame) {
     return limbs.map(limb => ({
         ...limb,
         upperImage: clippedPart(frame, limb.upper),
-        lowerImage: clippedPart(frame, limb.lower)
+        lowerImage: clippedPart(frame, limb.lower),
+        footImage: limb.foot ? clippedPart(frame, limb.foot) : null
     }));
 }
 
@@ -88,6 +90,7 @@ function drawWalkingFrame(ctx, frame, direction, step, parts) {
     // Only the leg in swing flexes. Its heel rises a few pixels toward the
     // body while the planted leg stays long enough to support the weight.
     const kneeFlex = [0, 0.07, 0.16, 0.09, 0, 0, 0, 0];
+    const footRoll = [-0.08, 0.10, 0.30, 0.17, -0.08, 0, 0, 0];
     const phase = step % WALK_FRAMES;
     const { hip, bob } = phases[phase];
     const sideView = direction === 'left' || direction === 'right';
@@ -97,7 +100,7 @@ function drawWalkingFrame(ctx, frame, direction, step, parts) {
     ctx.drawImage(frame, 0, 0);
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
-    for (const limb of parts) for (const polygon of [limb.upper, limb.lower]) {
+    for (const limb of parts) for (const polygon of [limb.upper, limb.lower, limb.foot].filter(Boolean)) {
         path(ctx, polygon);
         ctx.fill();
     }
@@ -119,7 +122,16 @@ function drawWalkingFrame(ctx, frame, direction, step, parts) {
         ctx.translate(-pivot[0], -pivot[1]);
         // Perspective foreshortening lifts the heel by several display pixels
         // at peak swing; a smaller change disappeared at the game's 1/3 scale.
-        rotatePart(ctx, limb.lowerImage, limb.joint, kneeAngle, 1 - flex * 1.8);
+        ctx.save();
+        ctx.translate(...limb.joint);
+        ctx.rotate(kneeAngle);
+        ctx.scale(1, 1 - flex * 1.8);
+        ctx.translate(-limb.joint[0], -limb.joint[1]);
+        ctx.drawImage(limb.lowerImage, 0, 0);
+        // The ankle articulates independently: heel contact, toe-off, then a
+        // lifted toe during swing. This remains visible at the game's scale.
+        rotatePart(ctx, limb.footImage, limb.ankle, Math.sign(hip) * footRoll[limbPhase]);
+        ctx.restore();
         ctx.drawImage(limb.upperImage, 0, 0);
         ctx.restore();
     }
@@ -136,6 +148,36 @@ function drawWalkingFrame(ctx, frame, direction, step, parts) {
         ctx.restore();
     }
     ctx.restore();
+}
+
+function drawSeatedFrame(ctx, frame, parts) {
+    ctx.drawImage(frame, 0, 0);
+    const legs = parts.filter(part => part.kind === 'leg');
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    for (const limb of legs) for (const polygon of [limb.upper, limb.lower, limb.foot]) {
+        path(ctx, polygon);
+        ctx.fill();
+    }
+    ctx.restore();
+    for (const [index, limb] of legs.entries()) {
+        const side = index === 0 ? 1 : -1;
+        ctx.save();
+        ctx.translate(...limb.hip);
+        ctx.rotate(side * 0.63);
+        ctx.translate(-limb.hip[0], -limb.hip[1]);
+        ctx.save();
+        ctx.translate(...limb.joint);
+        ctx.rotate(-side * 0.62);
+        ctx.scale(1, 0.64);
+        ctx.translate(-limb.joint[0], -limb.joint[1]);
+        ctx.drawImage(limb.lowerImage, 0, 0);
+        ctx.drawImage(limb.footImage, 0, 0);
+        ctx.restore();
+        ctx.drawImage(limb.upperImage, 0, 0);
+        ctx.restore();
+    }
+    ctx.drawImage(frame, 31, 74, 34, 13, 31, 74, 34, 13);
 }
 
 function sourceCanvas(scene, key) {
@@ -198,6 +240,8 @@ export function drawIllustratedFrame(ctx, frame, direction = 'down', pose = 'idl
     if (pose === 'pushup') {
         ctx.translate(0, 85); ctx.scale(1, 0.38);
         ctx.drawImage(frame, 0, 0);
+    } else if (pose === 'sit') {
+        drawSeatedFrame(ctx, frame, parts || articulatedParts(frame));
     } else if (pose === 'punch' || pose === 'kick') {
         ctx.translate(pose === 'punch' ? 5 : 2, pose === 'kick' ? -3 : 0);
         ctx.drawImage(frame, 0, 0);
@@ -220,17 +264,18 @@ export function createIllustratedTextures(scene) {
         if (scene.textures.exists(key)) scene.textures.remove(key);
         const isStudent = key.startsWith('student_');
         const parts = isStudent ? null : articulatedParts(frame);
-        const frameCount = isStudent ? 4 : WALK_START + WALK_FRAMES * 4;
+        const frameCount = isStudent ? 4 : WALK_START + WALK_FRAMES * 4 + (key === 'tecnico_casual' ? 1 : 0);
         const columns = isStudent ? 4 : 8;
         const texture = scene.textures.createCanvas(key, FRAME_WIDTH * columns,
             FRAME_HEIGHT * Math.ceil(frameCount / columns));
         for (let index = 0; index < frameCount; index++) {
             const x = index % columns * FRAME_WIDTH, y = Math.floor(index / columns) * FRAME_HEIGHT;
             texture.context.save(); texture.context.translate(x, y);
-            const walking = !isStudent && index >= WALK_START;
+            const sitting = key === 'tecnico_casual' && index === WALK_START + WALK_FRAMES * 4;
+            const walking = !isStudent && index >= WALK_START && !sitting;
             const direction = isStudent ? 'left' : ['down', 'left', 'right', 'up'][Math.floor((walking ? index - WALK_START : index) / (walking ? WALK_FRAMES : 4))] || 'down';
             const pose = isStudent ? index < 2 ? 'idle' : 'pushup'
-                : walking ? 'walk' : index >= 16 ? 'pushup' : 'idle';
+                : sitting ? 'sit' : walking ? 'walk' : index >= 16 ? 'pushup' : 'idle';
             drawIllustratedFrame(texture.context, frame, direction, pose,
                 walking ? (index - WALK_START) % WALK_FRAMES : index % 4, parts);
             texture.context.restore();

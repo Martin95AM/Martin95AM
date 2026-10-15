@@ -38,15 +38,18 @@ export default class StudioScene extends Phaser.Scene {
         this.createPianoCorner();
         this.createDrumCorner();
 
-        // Spawn the studio technician (NPC) in the center of the Persian rug (320, 420)
+        // The technician visits each workstation once before reshuffling the
+        // order. Every target stays in walkable floor space beside its prop.
         this.npcs = [
             new NPC(this, 320, 420, 'tecnico_casual', 'Técnico', [
                 '¡Hola, Martin! Bienvenido a mi estudio de grabación.',
                 'Aquí es donde ocurre la magia de la música.'
             ], '', [
-                { x: 320, y: 420 }, { x: 374, y: 420 },
-                { x: 374, y: 462 }, { x: 320, y: 462 }
-            ])
+                { x: 320, y: 267, facing: 'up', sit: true, wait: 4200 },
+                { x: 500, y: 360, facing: 'right', wait: 2600 },
+                { x: 194, y: 434, facing: 'left', wait: 3000 },
+                { x: 511, y: 458, facing: 'right', wait: 2800 }
+            ]).setPatrolMode('shuffle')
         ];
 
         this.npcs.forEach((npc) => {

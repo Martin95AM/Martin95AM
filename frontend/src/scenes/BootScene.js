@@ -123,6 +123,10 @@ export default class BootScene extends Phaser.Scene {
         // than the floaty top-down RPG walk they replaced.
         this.createCharacterMovementAnimations('miyagi', 'guard', 11);
         this.createCharacterMovementAnimations('technician', 'tecnico_casual', 9);
+        this.anims.create({
+            key: 'technician-sit',
+            frames: [{ key: 'tecnico_casual', frame: WALK_START + WALK_FRAMES * 4 }]
+        });
 
         this.anims.create({
             key: 'torii-open',

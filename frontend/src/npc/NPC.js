@@ -11,6 +11,9 @@ export default class NPC extends Phaser.Physics.Arcade.Sprite {
         this.direction = 'down';
         this.patrol = patrol;
         this.patrolIndex = 0;
+        this.patrolMode = 'loop';
+        this.patrolQueue = [];
+        this.currentPatrolStop = null;
         this.patrolPauseUntil = scene.time.now + 700;
         this.patrolSpeed = 44;
 
@@ -30,32 +33,50 @@ export default class NPC extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
+    setPatrolMode(mode) {
+        this.patrolMode = mode;
+        if (mode === 'shuffle') this.patrolIndex = this.nextPatrolIndex();
+        return this;
+    }
+
+    nextPatrolIndex() {
+        if (!this.patrolQueue.length) {
+            this.patrolQueue = Phaser.Utils.Array.Shuffle(this.patrol.map((_, index) => index));
+            if (this.patrolQueue.length > 1 && this.patrolQueue[0] === this.patrolIndex) {
+                [this.patrolQueue[0], this.patrolQueue[1]] = [this.patrolQueue[1], this.patrolQueue[0]];
+            }
+        }
+        return this.patrolQueue.shift();
+    }
+
     update({ paused = false } = {}) {
         if (!this.patrol.length) return;
 
         if (paused) {
             this.setVelocity(0, 0);
-            this.playAnimation('idle');
+            this.playAnimation(this.currentPatrolStop?.sit ? 'sit' : 'idle');
             return;
         }
 
         if (this.scene.time.now < this.patrolPauseUntil) {
             this.setVelocity(0, 0);
-            this.playAnimation('idle');
+            this.playAnimation(this.currentPatrolStop?.sit ? 'sit' : 'idle');
             return;
         }
 
+        this.currentPatrolStop = null;
         const destination = this.patrol[this.patrolIndex];
         const dx = destination.x - this.x;
         const dy = destination.y - this.y;
         if (Math.hypot(dx, dy) < 4) {
             this.setPosition(destination.x, destination.y);
             this.setVelocity(0, 0);
-            this.patrolIndex = (this.patrolIndex + 1) % this.patrol.length;
-            // The deliberate beat at each corner is the old arcade fighter
-            // cadence: advance, plant the stance, then advance again.
-            this.patrolPauseUntil = this.scene.time.now + 420;
-            this.playAnimation('idle');
+            this.currentPatrolStop = destination;
+            this.direction = destination.facing || this.direction;
+            this.patrolIndex = this.patrolMode === 'shuffle'
+                ? this.nextPatrolIndex() : (this.patrolIndex + 1) % this.patrol.length;
+            this.patrolPauseUntil = this.scene.time.now + (destination.wait || 420);
+            this.playAnimation(destination.sit ? 'sit' : 'idle');
             return;
         }
 
@@ -67,7 +88,7 @@ export default class NPC extends Phaser.Physics.Arcade.Sprite {
 
     playAnimation(state) {
         const prefix = this.texture.key === 'guard' ? 'miyagi' : 'technician';
-        const key = `${prefix}-${state}-${this.direction}`;
-        if (this.anims?.exists(key)) this.play(key, true);
+        const key = state === 'sit' ? `${prefix}-sit` : `${prefix}-${state}-${this.direction}`;
+        if (this.scene.anims.exists(key)) this.play(key, true);
     }
 }
