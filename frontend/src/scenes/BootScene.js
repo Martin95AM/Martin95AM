@@ -40,7 +40,9 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('tiles', asset('assets/tiles/world.png'));
         this.load.image('dojo', asset('assets/tiles/dojo.png'));
         this.load.image('studio', asset('assets/tiles/studio.png'));
-        this.load.image('studio_cozy_drums', asset('assets/tiles/studio_cozy_drums.png'));
+        this.load.image('studio_cozy_drums', asset('assets/tiles/studio_cozy_no_large_speakers.png'));
+        this.load.image('academy_door', asset('assets/tiles/academy_door.png'));
+        this.load.image('machine_door', asset('assets/tiles/machine_door.png'));
         this.load.image('machine_room', asset('assets/tiles/machine_room.png'));
         this.load.image('weapon_rack', asset('assets/tiles/weapon_rack.png'));
         this.load.spritesheet('torii', asset('assets/tiles/torii.png'), {

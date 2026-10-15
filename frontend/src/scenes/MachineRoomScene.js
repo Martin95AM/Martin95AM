@@ -72,7 +72,7 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.player.setVelocity(0, 0);
         this.cameras.main.fadeOut(500, 0, 0, 0);
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-            this.scene.start('StudioScene', { player: { x: 520, y: 245 } });
+            this.scene.start('StudioScene', { player: { x: 535, y: 175 } });
         });
     }
 

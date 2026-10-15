@@ -312,7 +312,7 @@ export default class WorldScene extends Phaser.Scene {
             // Camera fade out and transition to StudioScene after 1.5 seconds
             this.cameras.main.fadeOut(1000, 0, 0, 0);
             this.time.delayedCall(1500, () => {
-                this.scene.start('StudioScene');
+                this.scene.start('StudioScene', { player: { x: 105, y: 175 } });
             });
         }
     }
