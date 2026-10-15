@@ -43,11 +43,11 @@ export default class DojoCombat {
         });
     }
 
-    updateHud(message = 'Sensei practica katas. Acercate para entrenar.') {
+    updateHud(message = 'Miyagi practica katas. Acercate para entrenar.') {
         const weapon = this.scene.equippedWeapon?.name;
         this.hud.setText([
-            `P: ${weapon || 'puño'} · O: patada · M: golpe del Sensei · F: flexiones`,
-            `Golpes acertados — Martín: ${this.hits.player} | Sensei: ${this.hits.sensei}`,
+            `P: ${weapon || 'puño'} · O: patada · M: golpe de Miyagi · F: flexiones`,
+            `Golpes acertados — Martín: ${this.hits.player} | Miyagi: ${this.hits.sensei}`,
             message
         ]);
     }
@@ -102,9 +102,9 @@ export default class DojoCombat {
             if (distance <= STRIKES.kick.reach) {
                 const type = distance <= STRIKES.punch.reach ? 'punch' : 'kick';
                 this.strike(this.sensei, this.player, type, facingTarget(this.sensei, this.player));
-                this.updateHud('¡Guardia! El Sensei va a golpear. Podés esquivarlo.');
+                this.updateHud('¡Guardia! Miyagi va a golpear. Podés esquivarlo.');
             } else {
-                this.updateHud('Acercate al Sensei y presioná M para pedirle un golpe.');
+                this.updateHud('Acercate a Miyagi y presioná M para pedirle un golpe.');
             }
         }
 
@@ -172,7 +172,7 @@ export default class DojoCombat {
         const weapon = activeWeapon?.name;
         this.updateHud(attacker === this.player
             ? `¡Buen golpe${weapon ? ` con ${weapon}` : ''}, Martín!`
-            : '¡El Sensei acertó! Probá alejarte durante su preparación.');
+            : '¡Miyagi acertó! Probá alejarte durante su preparación.');
         this.createImpactEffect(target, activeWeapon?.key);
     }
 

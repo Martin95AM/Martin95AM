@@ -62,8 +62,9 @@ export default class BootScene extends Phaser.Scene {
 
         createIllustratedTextures(this);
         this.createAnimations();
-        const studioPreview = import.meta.env.DEV && ['studio', 'drums'].includes(new URLSearchParams(window.location.search).get('preview'));
-        this.scene.start(studioPreview ? 'StudioScene' : 'MenuScene');
+        // The studio is now the game's home scene; preview modes still use their
+        // dedicated spawn locations inside it.
+        this.scene.start('StudioScene');
 
     }
 

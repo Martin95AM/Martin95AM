@@ -40,7 +40,7 @@ export default class WorldScene extends Phaser.Scene {
         this.dialogSystem = new DialogSystem(this);
 
         this.npcs = [
-            new NPC(this, 320, 320, 'guard', 'Sensei', [
+            new NPC(this, 320, 320, 'guard', 'Miyagi', [
                 'Bienvenido al Dojo'
             ], '')
         ];
@@ -97,7 +97,7 @@ export default class WorldScene extends Phaser.Scene {
         this.promptBox.on('pointerdown', () => {
             this.handleInteraction();
         });
-        this.promptText = this.add.text(320, 280, "Pulsa E para hablar con Sensei", {
+        this.promptText = this.add.text(320, 280, "Pulsa E para hablar con Miyagi", {
             fontSize: "9px",
             color: "#ffffff",
             fontFamily: "monospace"
@@ -153,7 +153,7 @@ export default class WorldScene extends Phaser.Scene {
         let promptY = 0;
 
         if (distToElias < 50 && !this.dialogSystem.visible) {
-            activePrompt = "Pulsa E para hablar con Sensei";
+            activePrompt = "Pulsa E para hablar con Miyagi";
             promptX = this.npcs[0].x;
             promptY = this.npcs[0].y - 35;
         } else if (distToRack < 62 && !this.dialogSystem.visible && !this.weaponMenuOpen) {
@@ -360,7 +360,7 @@ export default class WorldScene extends Phaser.Scene {
         }
 
         this.dialogSystem.showDialog(nearby);
-        if (nearby.name === 'Sensei') {
+        if (nearby.name === 'Miyagi') {
             this.eliasState = 'talked';
         }
     }
