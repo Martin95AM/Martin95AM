@@ -352,7 +352,7 @@ export default class WorldScene extends Phaser.Scene {
         const armedAction = action?.type === 'punch' ? action : null;
         const direction = armedAction?.direction || this.player.direction;
         const scale = {
-            bo: 0.72, sai: 0.70, tonfa: 0.70, nunchaku: 0.67, kamas: 0.62
+            bo: 0.72, sai: 0.48, tonfa: 0.70, nunchaku: 0.67, kamas: 0.62
         }[this.equippedWeapon.key];
         const grips = armedAction ? combatHandOffsets(direction, armedAction.phase) : 9;
         drawWeapon(g, this.equippedWeapon.key, x, armedAction ? y : y + 2,

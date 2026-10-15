@@ -19,10 +19,14 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
         anchorY = y + grip.y;
         // Paired weapons have separate trajectories, so the rear weapon does
         // not visually merge with the one thrust from the leading hand.
-        activeFacing = paired && hand !== primaryHand ? {
-            right: [0.65, -0.76], left: [-0.65, -0.76],
-            up: [-0.45, -0.89], down: [-0.45, 0.89]
-        }[direction] : facing;
+        activeFacing = paired && hand !== primaryHand
+            ? (key === 'sai' ? {
+                right: [-0.76, -0.65], left: [0.76, -0.65],
+                up: [-0.65, -0.76], down: [-0.65, 0.76]
+            } : {
+                right: [0.65, -0.76], left: [-0.65, -0.76],
+                up: [-0.45, -0.89], down: [-0.45, 0.89]
+            })[direction] : facing;
         activeSide = [-activeFacing[1], activeFacing[0]];
     };
     const resetAnchor = () => {
@@ -81,20 +85,31 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
         break;
     }
     case 'sai': {
+        // Each sai is about one forearm long at the fighter's 32×48 scale.
+        // The narrow central blade projects well past the two shorter guards.
+        const thrust = attacking ? 2 : 0;
         for (const hand of [-1, 1]) {
             holdInHand(hand);
             const lateral = attachedToFists ? 0 : hand * 8;
-            grip(1, 9, lateral, 3);
-            line([[8, lateral], [21 + push, lateral]], 3, 0x53616d);
-            line([[9, lateral - 1], [20 + push, lateral - 1]], 1, 0xe4eef3);
-            shape([[20 + push, lateral - 2], [24 + push, lateral], [20 + push, lateral + 2]], 0xf4f8f7);
+            grip(-2, 7, lateral, 2.5);
+            line([[7, lateral - 2.2], [7, lateral + 2.2]], 2.5, 0x48545f);
+            shape([
+                [7, lateral - 1.7], [23 + thrust, lateral - 1.25],
+                [33 + thrust, lateral], [23 + thrust, lateral + 1.25],
+                [7, lateral + 1.7]
+            ], 0xc8d3d9, 0x4c5b66);
+            line([[10, lateral - 0.6], [28 + thrust, lateral - 0.4]], 1.1, 0xf2f8fa);
             for (const wing of [-1, 1]) {
-                line([[9, lateral], [12, lateral + wing * 4], [16, lateral + wing * 4]], 2, 0xaab8c2);
-                line([[14, lateral + wing * 4], [17, lateral + wing * 3]], 1, 0xf4f8f7);
+                shape([
+                    [7, lateral + wing * 1.2], [10, lateral + wing * 4.1],
+                    [17, lateral + wing * 4.4], [19, lateral + wing * 3.4],
+                    [12, lateral + wing * 2.7], [9, lateral + wing * 0.8]
+                ], 0xaab8c2, 0x4c5b66);
+                line([[11, lateral + wing * 3.5], [17, lateral + wing * 3.7]], 1, 0xf4f8f7);
             }
         }
         resetAnchor();
-        if (attacking) arc([[26, -4], [31, 0], [26, 4]], 2);
+        if (attacking) arc([[29, -3], [35, 0], [29, 3]], 1.5);
         break;
     }
     case 'tonfa': {

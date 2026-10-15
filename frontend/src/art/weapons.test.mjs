@@ -5,15 +5,31 @@ import { combatHandOffsets } from '../combat/poses.js';
 
 class RecordingGraphics {
     paths = [];
+    polygons = [];
     lineStyle(_width, color) { this.color = color; return this; }
-    fillStyle() { return this; }
-    fillPoints() { return this; }
+    fillStyle(color) { this.fillColor = color; return this; }
+    fillPoints(points) { this.polygons.push({ color: this.fillColor, points }); return this; }
     strokePoints() { return this; }
     beginPath() { this.points = []; return this; }
     moveTo(x, y) { this.points.push([x, y]); return this; }
     lineTo(x, y) { this.points.push([x, y]); return this; }
     strokePath() { this.paths.push({ color: this.color, points: this.points }); return this; }
 }
+
+test('held sai has a longer middle blade and remains proportional to the fighter', () => {
+    const graphics = new RecordingGraphics();
+    drawWeapon(graphics, 'sai', 100, 100, 'right', false, 0.48, 9);
+    const furthestX = color => Math.max(...graphics.polygons
+        .filter(polygon => polygon.color === color)
+        .flatMap(polygon => polygon.points.map(point => point.x)));
+    const middleTip = furthestX(0xc8d3d9);
+    const outerTip = furthestX(0xaab8c2);
+    assert.ok(middleTip - outerTip >= 6, 'central blade extends clearly beyond both side prongs');
+    assert.ok(middleTip - 109 <= 18, 'sai length stays below half the 48px fighter height');
+    const centralBlades = graphics.polygons.filter(polygon => polygon.color === 0xc8d3d9);
+    assert.ok(centralBlades.some(blade => blade.points.some(point => point.x < 85)),
+        'rear sai is visible outside the torso instead of crossing it');
+});
 
 function distanceToSegment([px, py], [ax, ay], [bx, by]) {
     const dx = bx - ax, dy = by - ay;
@@ -24,7 +40,7 @@ function distanceToSegment([px, py], [ax, ay], [bx, by]) {
 
 const weapons = {
     bo: { scale: 0.72, handle: 0x493020, paired: false },
-    sai: { scale: 0.70, handle: 0x382a27, paired: true },
+    sai: { scale: 0.48, handle: 0x382a27, paired: true },
     tonfa: { scale: 0.70, handle: 0x3b2b24, paired: true },
     nunchaku: { scale: 0.67, handle: 0x382a27, paired: false },
     kamas: { scale: 0.62, handle: 0x382a27, paired: true }
