@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { createIllustratedTextures } from '../art/illustrated.js';
+import { createIllustratedTextures, WALK_START, WALK_FRAMES } from '../art/illustrated.js';
 
 // Files copied from public/ keep stable names. Adding the deployment SHA makes
 // browsers fetch the matching art after every GitHub Pages release.
@@ -72,29 +72,29 @@ export default class BootScene extends Phaser.Scene {
 
         this.anims.create({
             key: 'walk-down',
-            frames: this.anims.generateFrameNumbers('martin', { start: 0, end: 3 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin', { start: WALK_START, end: WALK_START + WALK_FRAMES - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'walk-left',
-            frames: this.anims.generateFrameNumbers('martin', { start: 4, end: 7 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin', { start: WALK_START + WALK_FRAMES, end: WALK_START + WALK_FRAMES * 2 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'walk-right',
-            frames: this.anims.generateFrameNumbers('martin', { start: 8, end: 11 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin', { start: WALK_START + WALK_FRAMES * 2, end: WALK_START + WALK_FRAMES * 3 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'walk-up',
-            frames: this.anims.generateFrameNumbers('martin', { start: 12, end: 15 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin', { start: WALK_START + WALK_FRAMES * 3, end: WALK_START + WALK_FRAMES * 4 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
@@ -118,7 +118,7 @@ export default class BootScene extends Phaser.Scene {
             frames: [{ key: 'martin', frame: 12 }]
         });
 
-        // Shared four-frame cadence for the NPCs.  The snappy 11 fps loop and
+        // Shared eight-frame cadence for the NPCs. The snappy 11 fps loop and
         // planted first frame are intentionally closer to 90s arcade sprites
         // than the floaty top-down RPG walk they replaced.
         this.createCharacterMovementAnimations('miyagi', 'guard', 11);
@@ -141,29 +141,29 @@ export default class BootScene extends Phaser.Scene {
 
         this.anims.create({
             key: 'casual-walk-down',
-            frames: this.anims.generateFrameNumbers('martin_casual', { start: 0, end: 3 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin_casual', { start: WALK_START, end: WALK_START + WALK_FRAMES - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'casual-walk-left',
-            frames: this.anims.generateFrameNumbers('martin_casual', { start: 4, end: 7 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin_casual', { start: WALK_START + WALK_FRAMES, end: WALK_START + WALK_FRAMES * 2 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'casual-walk-right',
-            frames: this.anims.generateFrameNumbers('martin_casual', { start: 8, end: 11 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin_casual', { start: WALK_START + WALK_FRAMES * 2, end: WALK_START + WALK_FRAMES * 3 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'casual-walk-up',
-            frames: this.anims.generateFrameNumbers('martin_casual', { start: 12, end: 15 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin_casual', { start: WALK_START + WALK_FRAMES * 3, end: WALK_START + WALK_FRAMES * 4 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
@@ -189,29 +189,29 @@ export default class BootScene extends Phaser.Scene {
 
         this.anims.create({
             key: 'headphones-walk-down',
-            frames: this.anims.generateFrameNumbers('martin_casual_headphones', { start: 0, end: 3 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin_casual_headphones', { start: WALK_START, end: WALK_START + WALK_FRAMES - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'headphones-walk-left',
-            frames: this.anims.generateFrameNumbers('martin_casual_headphones', { start: 4, end: 7 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin_casual_headphones', { start: WALK_START + WALK_FRAMES, end: WALK_START + WALK_FRAMES * 2 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'headphones-walk-right',
-            frames: this.anims.generateFrameNumbers('martin_casual_headphones', { start: 8, end: 11 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin_casual_headphones', { start: WALK_START + WALK_FRAMES * 2, end: WALK_START + WALK_FRAMES * 3 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
         this.anims.create({
             key: 'headphones-walk-up',
-            frames: this.anims.generateFrameNumbers('martin_casual_headphones', { start: 12, end: 15 }),
-            frameRate: 8,
+            frames: this.anims.generateFrameNumbers('martin_casual_headphones', { start: WALK_START + WALK_FRAMES * 3, end: WALK_START + WALK_FRAMES * 4 - 1 }),
+            frameRate: 16,
             repeat: -1
         });
 
@@ -257,17 +257,18 @@ export default class BootScene extends Phaser.Scene {
     }
 
     createCharacterMovementAnimations(prefix, texture, frameRate) {
-        const directions = { down: 0, left: 4, right: 8, up: 12 };
-        for (const [direction, start] of Object.entries(directions)) {
+        const directions = { down: 0, left: 1, right: 2, up: 3 };
+        for (const [direction, index] of Object.entries(directions)) {
+            const start = WALK_START + index * WALK_FRAMES;
             this.anims.create({
                 key: `${prefix}-walk-${direction}`,
-                frames: this.anims.generateFrameNumbers(texture, { start, end: start + 3 }),
+                frames: this.anims.generateFrameNumbers(texture, { start, end: start + WALK_FRAMES - 1 }),
                 frameRate,
                 repeat: -1
             });
             this.anims.create({
                 key: `${prefix}-idle-${direction}`,
-                frames: [{ key: texture, frame: start }],
+                frames: [{ key: texture, frame: index * 4 }],
                 frameRate: 1
             });
         }

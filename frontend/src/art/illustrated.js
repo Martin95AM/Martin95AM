@@ -11,6 +11,130 @@ const beltColors = {
     blue: [46, 105, 184], brown: [111, 69, 43]
 };
 export const illustratedFrames = new Map();
+export const WALK_START = 20;
+export const WALK_FRAMES = 8;
+
+// Cut the approved illustration at actual joints. Every walking frame is
+// assembled from upper and lower limbs rather than sliding a flat silhouette.
+const LEFT_ARM = {
+    upper: [[25, 38], [39, 39], [39, 51], [35, 66], [23, 68], [18, 57]],
+    lower: [[20, 60], [35, 61], [34, 75], [30, 89], [14, 91], [11, 80]],
+    shoulder: [31, 44], joint: [27, 64]
+};
+const LEFT_LEG = {
+    upper: [[34, 77], [49, 77], [49, 96], [42, 113], [24, 113], [25, 99]],
+    lower: [[24, 106], [43, 106], [39, 125], [40, 143], [10, 143], [15, 132]],
+    hip: [39, 83], joint: [32, 109]
+};
+const mirror = points => points.map(([x, y]) => [FRAME_WIDTH - x, y]);
+const limbs = [
+    { ...LEFT_ARM, kind: 'arm' },
+    { upper: mirror(LEFT_ARM.upper), lower: mirror(LEFT_ARM.lower),
+        shoulder: [65, 44], joint: [69, 64], kind: 'arm' },
+    { ...LEFT_LEG, kind: 'leg' },
+    { upper: mirror(LEFT_LEG.upper), lower: mirror(LEFT_LEG.lower),
+        hip: [57, 83], joint: [64, 109], kind: 'leg' }
+];
+
+function path(ctx, points) {
+    ctx.beginPath();
+    points.forEach(([x, y], index) => index ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+    ctx.closePath();
+}
+
+function clippedPart(frame, points) {
+    const canvas = document.createElement('canvas');
+    canvas.width = FRAME_WIDTH;
+    canvas.height = FRAME_HEIGHT;
+    const ctx = canvas.getContext('2d');
+    path(ctx, points);
+    ctx.clip();
+    ctx.drawImage(frame, 0, 0);
+    return canvas;
+}
+
+function articulatedParts(frame) {
+    return limbs.map(limb => ({
+        ...limb,
+        upperImage: clippedPart(frame, limb.upper),
+        lowerImage: clippedPart(frame, limb.lower)
+    }));
+}
+
+function rotatePart(ctx, image, pivot, angle, length = 1) {
+    ctx.save();
+    ctx.translate(...pivot);
+    ctx.rotate(angle);
+    ctx.scale(1, length);
+    ctx.translate(-pivot[0], -pivot[1]);
+    ctx.drawImage(image, 0, 0);
+    ctx.restore();
+}
+
+function drawWalkingFrame(ctx, frame, direction, step, parts) {
+    // A full left/right gait: heel contact, loading, mid-stance, toe-off,
+    // then the same four phases on the opposite side. The hip drives the
+    // stride; knee flexion peaks during swing, after the foot leaves ground.
+    const phases = [
+        { hip: 0.30, bob: 0 },
+        { hip: 0.24, bob: 1 },
+        { hip: 0.13, bob: 2 },
+        { hip: 0.04, bob: 1 },
+        { hip: -0.30, bob: 0 },
+        { hip: -0.24, bob: 1 },
+        { hip: -0.13, bob: 2 },
+        { hip: -0.04, bob: 1 }
+    ];
+    // Only the leg in swing flexes. Its heel rises a few pixels toward the
+    // body while the planted leg stays long enough to support the weight.
+    const kneeFlex = [0, 0.07, 0.14, 0.08, 0, 0, 0, 0];
+    const phase = step % WALK_FRAMES;
+    const { hip, bob } = phases[phase];
+    const sideView = direction === 'left' || direction === 'right';
+    ctx.save();
+    if (direction === 'left') { ctx.translate(FRAME_WIDTH, 0); ctx.scale(-1, 1); }
+    ctx.translate(0, bob);
+    ctx.drawImage(frame, 0, 0);
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    for (const limb of parts) for (const polygon of [limb.upper, limb.lower]) {
+        path(ctx, polygon);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // Draw legs behind the torso and arms over the sleeves. The elbow and
+    // knee angles are independent from the shoulder and hip swing.
+    for (const [legIndex, limb] of parts.filter(part => part.kind === 'leg').entries()) {
+        // Both image-space rotations point the same way because the source
+        // limbs are mirrored; visually one thigh advances as the other trails.
+        const hipAngle = hip * (sideView ? 1 : 0.82);
+        const limbPhase = (phase + legIndex * 4) % WALK_FRAMES;
+        const flex = kneeFlex[limbPhase];
+        const kneeAngle = Math.sign(hip) * flex;
+        const pivot = limb.hip;
+        ctx.save();
+        ctx.translate(...pivot);
+        ctx.rotate(hipAngle);
+        ctx.translate(-pivot[0], -pivot[1]);
+        rotatePart(ctx, limb.lowerImage, limb.joint, kneeAngle, 1 - flex * 0.7);
+        ctx.drawImage(limb.upperImage, 0, 0);
+        ctx.restore();
+    }
+    for (const limb of parts.filter(part => part.kind === 'arm')) {
+        const shoulderAngle = -hip * (sideView ? 1.15 : 0.9);
+        const elbowAngle = -Math.sign(hip) * (0.08 + Math.abs(hip) * 0.35);
+        const pivot = limb.shoulder;
+        ctx.save();
+        ctx.translate(...pivot);
+        ctx.rotate(shoulderAngle);
+        ctx.translate(-pivot[0], -pivot[1]);
+        rotatePart(ctx, limb.lowerImage, limb.joint, elbowAngle);
+        ctx.drawImage(limb.upperImage, 0, 0);
+        ctx.restore();
+    }
+    ctx.restore();
+}
 
 function sourceCanvas(scene, key) {
     const image = scene.textures.get(sourceFor(key)).getSourceImage();
@@ -61,18 +185,17 @@ function normalizedFrame(source) {
     return frame;
 }
 
-export function drawIllustratedFrame(ctx, frame, direction = 'down', pose = 'idle', step = 0) {
+export function drawIllustratedFrame(ctx, frame, direction = 'down', pose = 'idle', step = 0, parts = null) {
     ctx.save();
+    if (pose === 'walk') {
+        drawWalkingFrame(ctx, frame, direction, step, parts || articulatedParts(frame));
+        ctx.restore();
+        return;
+    }
     if (direction === 'left') { ctx.translate(FRAME_WIDTH, 0); ctx.scale(-1, 1); }
     if (pose === 'pushup') {
         ctx.translate(0, 85); ctx.scale(1, 0.38);
         ctx.drawImage(frame, 0, 0);
-    } else if (pose === 'walk') {
-        const shifts = [-5, -1, 5, 1];
-        const shift = shifts[step % 4];
-        const bob = [0, 2, 0, 1][step % 4];
-        ctx.drawImage(frame, 0, 0, 96, 82, 0, bob, 96, 82);
-        ctx.drawImage(frame, 0, 82, 96, 62, shift, 82 + bob, 96, 62);
     } else if (pose === 'punch' || pose === 'kick') {
         ctx.translate(pose === 'punch' ? 5 : 2, pose === 'kick' ? -3 : 0);
         ctx.drawImage(frame, 0, 0);
@@ -94,13 +217,20 @@ export function createIllustratedTextures(scene) {
         illustratedFrames.set(key, frame);
         if (scene.textures.exists(key)) scene.textures.remove(key);
         const isStudent = key.startsWith('student_');
-        const texture = scene.textures.createCanvas(key, FRAME_WIDTH * 4, FRAME_HEIGHT * (isStudent ? 1 : 5));
-        for (let index = 0; index < (isStudent ? 4 : 20); index++) {
-            const x = index % 4 * FRAME_WIDTH, y = Math.floor(index / 4) * FRAME_HEIGHT;
+        const parts = isStudent ? null : articulatedParts(frame);
+        const frameCount = isStudent ? 4 : WALK_START + WALK_FRAMES * 4;
+        const columns = isStudent ? 4 : 8;
+        const texture = scene.textures.createCanvas(key, FRAME_WIDTH * columns,
+            FRAME_HEIGHT * Math.ceil(frameCount / columns));
+        for (let index = 0; index < frameCount; index++) {
+            const x = index % columns * FRAME_WIDTH, y = Math.floor(index / columns) * FRAME_HEIGHT;
             texture.context.save(); texture.context.translate(x, y);
-            const direction = isStudent ? 'left' : ['down', 'left', 'right', 'up'][Math.floor(index / 4)] || 'down';
-            const pose = isStudent ? index < 2 ? 'idle' : 'pushup' : index >= 16 ? 'pushup' : index % 4 === 0 ? 'idle' : 'walk';
-            drawIllustratedFrame(texture.context, frame, direction, pose, index % 4);
+            const walking = !isStudent && index >= WALK_START;
+            const direction = isStudent ? 'left' : ['down', 'left', 'right', 'up'][Math.floor((walking ? index - WALK_START : index) / (walking ? WALK_FRAMES : 4))] || 'down';
+            const pose = isStudent ? index < 2 ? 'idle' : 'pushup'
+                : walking ? 'walk' : index >= 16 ? 'pushup' : 'idle';
+            drawIllustratedFrame(texture.context, frame, direction, pose,
+                walking ? (index - WALK_START) % WALK_FRAMES : index % 4, parts);
             texture.context.restore();
             texture.add(index, 0, x, y, FRAME_WIDTH, FRAME_HEIGHT);
         }
