@@ -1,18 +1,21 @@
 // Percussion is synthesized on demand so the kit works without audio assets.
 export const DRUM_PADS = [
-    { key: 'a', id: 'kick', label: 'Bombo', family: 'low' },
-    { key: 's', id: 'snare', label: 'Caja', family: 'mid' },
-    { key: 'd', id: 'closedHat', label: 'Hi-hat cerrado', family: 'high' },
-    { key: 'j', id: 'openHat', label: 'Hi-hat abierto', family: 'high' },
-    { key: 'k', id: 'tom', label: 'Tom', family: 'mid' },
-    { key: 'l', id: 'crash', label: 'Platillo', family: 'high' }
+    { key: 'a', id: 'kick', label: 'Bombo', family: 'low', midi: 36, midiNotes: [35, 36] },
+    { key: 's', id: 'snare', label: 'Redoblante', family: 'mid', midi: 38, midiNotes: [38, 40] },
+    { key: 'd', id: 'tomLow', label: 'Tom grave', family: 'mid', midi: 41, midiNotes: [41, 43] },
+    { key: 'f', id: 'tomMid', label: 'Tom medio', family: 'mid', midi: 45, midiNotes: [45, 47] },
+    { key: 'g', id: 'tomHigh', label: 'Tom agudo', family: 'mid', midi: 48, midiNotes: [48, 50] },
+    { key: 'h', id: 'hat', label: 'Hi-hat', family: 'high', midi: 42, midiNotes: [42, 44, 46] },
+    { key: 'j', id: 'ride', label: 'Ride', family: 'high', midi: 51, midiNotes: [51, 53, 59] },
+    { key: 'k', id: 'crash1', label: 'Crash 1', family: 'high', midi: 49, midiNotes: [49] },
+    { key: 'l', id: 'crash2', label: 'Crash 2', family: 'high', midi: 57, midiNotes: [57] }
 ];
 
 export default class DrumEngine {
     constructor() {
         this.context = null;
         this.active = new Set();
-        this.settings = { threshold: -18, ratio: 3, pan: 0, reverb: 0.15 };
+        this.settings = { threshold: -18, ratio: 3, pan: 0, reverb: 0.15, output: -6 };
     }
 
     async start() {
@@ -37,7 +40,7 @@ export default class DrumEngine {
             this.applySettings();
         }
         await this.context.resume();
-        this.master.gain.setValueAtTime(0.72, this.context.currentTime);
+        this.applySettings();
         return true;
     }
 
@@ -77,11 +80,12 @@ export default class DrumEngine {
         this.panner.pan.setTargetAtTime(this.settings.pan, now, 0.02);
         this.dry.gain.setTargetAtTime(1 - this.settings.reverb * 0.3, now, 0.02);
         this.wet.gain.setTargetAtTime(this.settings.reverb, now, 0.02);
+        this.master.gain.setTargetAtTime(Math.pow(10, this.settings.output / 20), now, 0.02);
     }
 
     // Every source belongs to a hit. Keeping the sources makes close() able to
     // silence a long cymbal or reverb tail immediately.
-    hit(key) {
+    hit(key, midiNote = null) {
         if (!this.context) return;
         const pad = DRUM_PADS.find(item => item.key === key);
         if (!pad) return;
@@ -131,19 +135,25 @@ export default class DrumEngine {
                 noise('highpass', 1450, 0.56, 0.23);
                 tone('triangle', 195, 120, 0.25, 0.13);
                 break;
-            case 'closedHat':
-                noise('highpass', 6800, 0.31, 0.075);
+            case 'hat':
+                noise('highpass', midiNote === 46 ? 5800 : 6800, midiNote === 46 ? 0.23 : 0.31, midiNote === 46 ? 0.67 : 0.075);
                 break;
-            case 'openHat':
-                noise('highpass', 5800, 0.23, 0.67);
-                break;
-            case 'tom':
-                tone('sine', 235, 86, 0.68, 0.43);
+            case 'tomLow':
+            case 'tomMid':
+            case 'tomHigh': {
+                const base = pad.id === 'tomLow' ? 155 : pad.id === 'tomMid' ? 205 : 275;
+                tone('sine', base, base * 0.43, 0.68, 0.43);
                 noise('lowpass', 1100, 0.08, 0.04);
                 break;
-            case 'crash':
-                noise('highpass', 3600, 0.32, 1.65);
-                tone('square', 860, 740, 0.035, 0.8);
+            }
+            case 'ride':
+                noise('highpass', 4700, 0.22, 1.25);
+                tone('square', 820, 780, 0.025, 0.8);
+                break;
+            case 'crash1':
+            case 'crash2':
+                noise('highpass', pad.id === 'crash1' ? 3600 : 4300, 0.32, 1.65);
+                tone('square', pad.id === 'crash1' ? 860 : 1050, 740, 0.035, 0.8);
                 break;
         }
 

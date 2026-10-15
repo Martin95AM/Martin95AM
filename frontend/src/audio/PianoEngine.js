@@ -2,19 +2,19 @@
 // studio is open so sliders can change the sound of notes already playing.
 export const PIANO_NOTES = [
     { key: 'a', label: 'Do', midi: 60, white: 0 },
-    { key: 'w', label: 'Do♯', midi: 61, black: 0 },
+    { key: 'w', label: 'Do♯ / Re♭', midi: 61, black: 0 },
     { key: 's', label: 'Re', midi: 62, white: 1 },
-    { key: 'e', label: 'Re♯', midi: 63, black: 1 },
+    { key: 'e', label: 'Re♯ / Mi♭', midi: 63, black: 1 },
     { key: 'd', label: 'Mi', midi: 64, white: 2 },
     { key: 'f', label: 'Fa', midi: 65, white: 3 },
-    { key: 't', label: 'Fa♯', midi: 66, black: 3 },
+    { key: 't', label: 'Fa♯ / Sol♭', midi: 66, black: 3 },
     { key: 'g', label: 'Sol', midi: 67, white: 4 },
-    { key: 'y', label: 'Sol♯', midi: 68, black: 4 },
+    { key: 'y', label: 'Sol♯ / La♭', midi: 68, black: 4 },
     { key: 'h', label: 'La', midi: 69, white: 5 },
-    { key: 'u', label: 'La♯', midi: 70, black: 5 },
+    { key: 'u', label: 'La♯ / Si♭', midi: 70, black: 5 },
     { key: 'j', label: 'Si', midi: 71, white: 6 },
     { key: 'k', label: 'Do', midi: 72, white: 7 },
-    { key: 'i', label: 'Do♯', midi: 73, black: 7 },
+    { key: 'i', label: 'Do♯ / Re♭', midi: 73, black: 7 },
     { key: 'l', label: 'Re', midi: 74, white: 8 }
 ];
 
@@ -22,7 +22,7 @@ export default class PianoEngine {
     constructor() {
         this.context = null;
         this.voices = new Map();
-        this.settings = { threshold: -22, ratio: 3, pan: 0, reverb: 0.18 };
+        this.settings = { threshold: -22, ratio: 3, pan: 0, reverb: 0.18, output: -6 };
     }
 
     async start() {
@@ -82,11 +82,14 @@ export default class PianoEngine {
         this.panner.pan.setTargetAtTime(this.settings.pan, now, 0.02);
         this.dry.gain.setTargetAtTime(1 - this.settings.reverb * 0.35, now, 0.02);
         this.wet.gain.setTargetAtTime(this.settings.reverb, now, 0.02);
+        this.master.gain.setTargetAtTime(Math.pow(10, this.settings.output / 20), now, 0.02);
     }
 
     noteOn(key) {
         if (!this.context || this.voices.has(key)) return;
-        const note = PIANO_NOTES.find(item => item.key === key);
+        const note = typeof key === 'number'
+            ? (Number.isInteger(key) && key >= 0 && key <= 127 ? { midi: key } : null)
+            : PIANO_NOTES.find(item => item.key === key);
         if (!note) return;
         const ctx = this.context;
         const now = ctx.currentTime;

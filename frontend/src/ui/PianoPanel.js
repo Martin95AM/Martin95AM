@@ -1,5 +1,6 @@
 import PianoEngine, { PIANO_NOTES } from '../audio/PianoEngine.js';
 import LoopSequencer from '../audio/LoopSequencer.js';
+import MidiInputController from '../audio/MidiInputController.js';
 import './piano.css';
 
 export default class PianoPanel {
@@ -27,6 +28,7 @@ export default class PianoPanel {
                         <fieldset><legend>Espacio · ambiente</legend>
                             <label>Panorama <output data-value="pan">Centro</output><input data-setting="pan" type="range" min="-1" max="1" step="0.05" value="0"></label>
                             <label>Reverberación <output data-value="reverb">18%</output><input data-setting="reverb" type="range" min="0" max="1" step="0.01" value="0.18"></label>
+                            <label>Salida <output data-value="output">−6,00 dB</output><input data-setting="output" type="range" min="-60" max="4" step="0.01" value="-6"></label>
                         </fieldset>
                     </div>
                 </div>
@@ -56,6 +58,21 @@ export default class PianoPanel {
             button.addEventListener('lostpointercapture', () => this.release(note.key));
         });
         this.root.querySelector('.piano-close').addEventListener('click', () => this.close());
+        this.midi = new MidiInputController({
+            host: this.root.querySelector('.piano-keyboard').parentElement,
+            onNoteOn: note => {
+                this.engine.noteOn(note);
+                const key = PIANO_NOTES.find(item => item.midi === note)?.key;
+                if (key) this.keyButtons.get(key)?.classList.add('pressed');
+            },
+            onNoteOff: note => {
+                if (note === null) { this.releaseAll(); return; }
+                this.engine.noteOff(note);
+                const key = PIANO_NOTES.find(item => item.midi === note)?.key;
+                if (key) this.keyButtons.get(key)?.classList.remove('pressed');
+            }
+        });
+        this.root.querySelector('.piano-keyboard').after(this.midi.element);
         this.sequencer = new LoopSequencer({
             rows: PIANO_NOTES.filter(note => note.white !== undefined).slice(0, 6),
             isDrums: false, name: 'piano',
@@ -70,7 +87,7 @@ export default class PianoPanel {
                 const labels = {
                     threshold: `${value} dB`, ratio: `${value}:1`,
                     pan: Math.abs(value) < 0.01 ? 'Centro' : `${Math.round(Math.abs(value) * 100)}% ${value < 0 ? 'izq.' : 'der.'}`,
-                    reverb: `${Math.round(value * 100)}%`
+                    reverb: `${Math.round(value * 100)}%`, output: `${value.toFixed(2).replace('.', ',')} dB`
                 };
                 this.root.querySelector(`[data-value="${name}"]`).textContent = labels[name];
             });
@@ -102,6 +119,7 @@ export default class PianoPanel {
         this.opened = true;
         this.root.querySelector('.piano-close').focus();
         await this.engine.start();
+        this.midi.resume();
     }
 
     press(key) {
@@ -124,6 +142,7 @@ export default class PianoPanel {
         this.opened = false;
         this.root.hidden = true;
         this.releaseAll();
+        this.midi.suspend();
     }
 
     destroy() {
@@ -133,6 +152,7 @@ export default class PianoPanel {
         window.removeEventListener('blur', this.onBlur);
         this.root.remove();
         this.sequencer.destroy();
+        this.midi.destroy();
         this.engine.destroy();
     }
 }

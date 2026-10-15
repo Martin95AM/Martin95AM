@@ -70,7 +70,8 @@ const weapons = {
     sai: { scale: 0.48, handle: 0x382a27, paired: true },
     tonfa: { scale: 0.70, handle: 0x3b2b24, paired: true },
     nunchaku: { scale: 0.67, handle: 0x382a27, paired: false },
-    kamas: { scale: 0.62, handle: 0x382a27, paired: true }
+    kamas: { scale: 0.62, handle: 0x382a27, paired: true },
+    katana: { scale: 0.52, handle: 0x382a27, paired: false }
 };
 
 for (const [key, { scale, handle, paired }] of Object.entries(weapons)) {

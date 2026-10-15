@@ -1,5 +1,6 @@
 import DrumEngine, { DRUM_PADS } from '../audio/DrumEngine.js';
 import LoopSequencer from '../audio/LoopSequencer.js';
+import MidiInputController from '../audio/MidiInputController.js';
 import './drum.css';
 
 export default class DrumPanel {
@@ -17,7 +18,7 @@ export default class DrumPanel {
                     <div><span class="drum-kicker">ESTUDIO · INSTRUMENTO 02</span><h2 id="drum-title">Batería de estudio</h2></div>
                     <button class="drum-close" type="button" aria-label="Cerrar batería">×</button>
                 </header>
-                <p class="drum-help">Marcá el ritmo con el teclado o tocá los pads con el mouse. Podés combinar sonidos.</p>
+                <p class="drum-help">Marcá el ritmo con el teclado, los pads o un dispositivo MIDI. Mapeo General MIDI: 36 bombo, 38 redoblante, 41/45/48 toms, 42/46 hi-hat, 51 ride, 49/57 crashes.</p>
                 <div class="drum-kit" role="group" aria-label="Pads de la batería"></div>
                 <div class="drum-rack">
                     <div class="drum-rack-heading"><span>MEZCLA DEL KIT</span><span class="drum-live">● EN VIVO</span></div>
@@ -29,10 +30,11 @@ export default class DrumPanel {
                         <fieldset><legend>Espacio · sala</legend>
                             <label>Panorama <output data-value="pan">Centro</output><input data-setting="pan" type="range" min="-1" max="1" step="0.05" value="0"></label>
                             <label>Ambiente <output data-value="reverb">15%</output><input data-setting="reverb" type="range" min="0" max="1" step="0.01" value="0.15"></label>
+                            <label>Salida <output data-value="output">−6,00 dB</output><input data-setting="output" type="range" min="-60" max="4" step="0.01" value="-6"></label>
                         </fieldset>
                     </div>
                 </div>
-                <p class="drum-footer">A · S · D · J · K · L para tocar &nbsp;·&nbsp; Esc para cerrar</p>
+                <p class="drum-footer">A S D F G H J K L para tocar &nbsp;·&nbsp; Esc para cerrar</p>
             </section>`;
         document.body.appendChild(this.root);
 
@@ -42,7 +44,7 @@ export default class DrumPanel {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = `drum-pad drum-${pad.family}`;
-            button.setAttribute('aria-label', `${pad.label}, tecla ${pad.key.toUpperCase()}`);
+            button.setAttribute('aria-label', `${pad.label}, tecla ${pad.key.toUpperCase()}, MIDI ${pad.midiNotes.join(' o ')}`);
             button.innerHTML = `<span class="drum-pad-head"></span><span class="drum-pad-label">${pad.label}</span><kbd>${pad.key.toUpperCase()}</kbd>`;
             button.addEventListener('pointerdown', event => {
                 event.preventDefault();
@@ -53,8 +55,16 @@ export default class DrumPanel {
         });
 
         this.root.querySelector('.drum-close').addEventListener('click', () => this.close());
+        this.midi = new MidiInputController({
+            host: this.root.querySelector('.drum-kit').parentElement,
+            onNoteOn: note => {
+                const pad = DRUM_PADS.find(item => item.midiNotes.includes(note));
+                if (pad) this.hit(pad.key, note);
+            }
+        });
+        this.root.querySelector('.drum-kit').after(this.midi.element);
         this.sequencer = new LoopSequencer({
-            rows: DRUM_PADS.map((pad, index) => ({ ...pad, midi: [36, 38, 42, 46, 45, 49][index] })),
+            rows: DRUM_PADS,
             isDrums: true, name: 'bateria', trigger: key => this.hit(key)
         });
         this.root.querySelector('.drum-rack').before(this.sequencer.element);
@@ -70,7 +80,7 @@ export default class DrumPanel {
                     threshold: `${value} dB`,
                     ratio: `${value}:1`,
                     pan: Math.abs(value) < 0.01 ? 'Centro' : `${Math.round(Math.abs(value) * 100)}% ${value < 0 ? 'izq.' : 'der.'}`,
-                    reverb: `${Math.round(value * 100)}%`
+                    reverb: `${Math.round(value * 100)}%`, output: `${value.toFixed(2).replace('.', ',')} dB`
                 };
                 this.root.querySelector(`[data-value="${name}"]`).textContent = labels[name];
             });
@@ -87,7 +97,7 @@ export default class DrumPanel {
             const key = event.key.toLowerCase();
             if (!this.padButtons.has(key)) return;
             // Keep arrow and letter shortcuts available while adjusting a slider.
-            if (event.target instanceof HTMLInputElement) return;
+            if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
             event.preventDefault();
             event.stopImmediatePropagation();
             if (!event.repeat && !this.heldKeys.has(key)) {
@@ -115,11 +125,12 @@ export default class DrumPanel {
         this.opened = true;
         this.root.querySelector('.drum-close').focus();
         await this.engine.start();
+        this.midi.resume();
     }
 
-    hit(key) {
+    hit(key, midiNote = null) {
         if (!this.opened) return;
-        this.engine.hit(key);
+        this.engine.hit(key, midiNote);
         const button = this.padButtons.get(key);
         if (!button) return;
         clearTimeout(this.flashTimers.get(key));
@@ -139,6 +150,7 @@ export default class DrumPanel {
         this.flashTimers.clear();
         this.padButtons.forEach(button => button.classList.remove('playing'));
         this.engine.stopAll();
+        this.midi.suspend();
     }
 
     destroy() {
@@ -148,6 +160,7 @@ export default class DrumPanel {
         window.removeEventListener('blur', this.onBlur);
         this.root.remove();
         this.sequencer.destroy();
+        this.midi.destroy();
         this.engine.destroy();
     }
 }

@@ -31,10 +31,13 @@ export default class DojoCombat {
             backgroundColor: '#111827', padding: { x: 10, y: 8 }, lineSpacing: 5
         }).setScrollFactor(0).setDepth(30000);
         scene.cameras.main.ignore(this.hud);
+        scene.cameras.main.ignore(scene.weaponMenu);
         this.hudCamera = scene.cameras.add(0, 0, scene.scale.width, scene.scale.height);
         this.hudCamera.inputEnabled = false;
-        this.hudCamera.ignore(scene.children.list.filter(child => child !== this.hud));
-        this.ignoreNewObject = child => { if (child !== this.hud) this.hudCamera.ignore(child); };
+        this.hudCamera.ignore(scene.children.list.filter(child => child !== this.hud && child !== scene.weaponMenu));
+        this.ignoreNewObject = child => {
+            if (child !== this.hud && child !== scene.weaponMenu) this.hudCamera.ignore(child);
+        };
         scene.events.on('addedtoscene', this.ignoreNewObject);
         this.updateHud();
         scene.events.once('shutdown', () => {
@@ -47,7 +50,7 @@ export default class DojoCombat {
     updateHud(message = 'Miyagi practica katas. Acercate para entrenar.') {
         const weapon = this.scene.equippedWeapon?.name;
         this.hud.setText([
-            `P: ${weapon || 'puño'} · O: patada · M: golpe de Miyagi · F: flexiones`,
+            `P: ${weapon || 'puño'} · O: patada · M: Miyagi · G: soltar arma · F: flexiones`,
             `Golpes acertados — Martín: ${this.hits.player} | Miyagi: ${this.hits.sensei}`,
             message
         ]);
@@ -215,14 +218,18 @@ export default class DojoCombat {
             sai: 0xdceaf6,
             tonfa: 0xe39a55,
             nunchaku: 0xffd35c,
-            kamas: 0xffd36c
+            kamas: 0xffd36c,
+            katana: 0xe7f7ff
         };
         const color = colors[weaponKey] || 0xffdf80;
         const flash = this.scene.add.circle(target.x, target.y - 8, weaponKey ? 8 : 7, color, 0.82).setDepth(20000);
         const marks = this.scene.add.graphics().setPosition(target.x, target.y - 8).setScale(0.65).setDepth(20001);
         marks.lineStyle(weaponKey === 'bo' ? 3 : 2, color, 0.95);
         const x = 0, y = 0;
-        if (weaponKey === 'kamas') {
+        if (weaponKey === 'katana') {
+            marks.beginPath().moveTo(x - 19, y + 13).lineTo(x - 4, y + 2)
+                .lineTo(x + 12, y - 9).lineTo(x + 20, y - 15).strokePath();
+        } else if (weaponKey === 'kamas') {
             marks.beginPath().moveTo(x - 17, y - 14).lineTo(x - 5, y - 8).lineTo(x + 15, y + 14)
                 .moveTo(x - 17, y + 14).lineTo(x - 5, y + 8).lineTo(x + 15, y - 14).strokePath();
             marks.lineStyle(1, 0xffffff, 0.95).beginPath()

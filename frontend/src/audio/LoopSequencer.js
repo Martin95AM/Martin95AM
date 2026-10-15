@@ -1,4 +1,7 @@
-const STEP_MS = 125;
+const stepMs = bpm => 15000 / bpm;
+const BARS = 24;
+const STEPS_PER_BAR = 16;
+const TOTAL_STEPS = BARS * STEPS_PER_BAR;
 
 function download(bytes, name, type) {
     const url = URL.createObjectURL(new Blob([bytes], { type }));
@@ -13,24 +16,24 @@ function base64(bytes) {
     return btoa(binary);
 }
 
-function midiFile(events, isDrums) {
-    const tempo = [0x00, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20]; // 120 BPM
+function midiFile(events, isDrums, bpm) {
+    const micros = Math.round(60000000 / bpm);
+    const tempo = [0x00, 0xff, 0x51, 0x03, (micros >>> 16) & 255, (micros >>> 8) & 255, micros & 255];
     const bytes = [...tempo]; let lastTick = 0;
-    const vlq = n => n < 128 ? [n] : [0x80 | (n >> 7), n & 127];
+    const vlq = n => { const out = [n & 127]; while ((n >>>= 7)) out.unshift((n & 127) | 128); return out; };
     events.sort((a, b) => a.tick - b.tick || a.off - b.off).forEach(event => {
         bytes.push(...vlq(event.tick - lastTick), event.off ? 0x80 | (isDrums ? 9 : 0) : 0x90 | (isDrums ? 9 : 0), event.note, event.off ? 0 : 100);
         lastTick = event.tick;
     });
-    bytes.push(0, 0xff, 0x2f, 0);
+    bytes.push(...vlq(Math.max(0, TOTAL_STEPS * 120 - lastTick)), 0xff, 0x2f, 0);
     const length = bytes.length;
     return new Uint8Array([77,84,104,100,0,0,0,6,0,0,0,1,1,224,77,84,114,107,(length>>>24)&255,(length>>>16)&255,(length>>>8)&255,length&255,...bytes]);
 }
 
-function wavFile(rows, isDrums) {
-    const rate = 44100, samples = new Float32Array(rate * 2);
-    rows.forEach((row, rowIndex) => row.steps.forEach((on, step) => {
-        if (!on) return;
-        const start = Math.floor(step * STEP_MS / 1000 * rate), length = Math.floor(rate * .16);
+function wavFile(rows, isDrums, bpm) {
+    const rate = 44100, samples = new Float32Array(Math.ceil(rate * stepMs(bpm) * TOTAL_STEPS / 1000));
+    rows.forEach((row, rowIndex) => row.notes.forEach(step => {
+        const start = Math.floor(step * stepMs(bpm) / 1000 * rate), length = Math.floor(rate * .16);
         for (let i = 0; i < length && start + i < samples.length; i++) {
             const t = i / rate, env = Math.exp(-t * (isDrums ? 18 : 4));
             const freq = isDrums ? (rowIndex === 0 ? 75 : 170 + rowIndex * 110) : 440 * Math.pow(2, (row.midi - 69) / 12);
@@ -46,28 +49,39 @@ function wavFile(rows, isDrums) {
 
 export default class LoopSequencer {
     constructor({ rows, isDrums, trigger, release, name }) {
-        this.rows = rows.map(row => ({ ...row, steps: Array(16).fill(false) })); this.isDrums = isDrums; this.trigger = trigger; this.release = release; this.name = name; this.timer = null; this.step = 0;
+        this.rows = rows.map(row => ({ ...row, notes: [] })); this.isDrums = isDrums; this.trigger = trigger; this.release = release; this.name = name; this.timer = null; this.step = 0; this.bar = 0; this.bpm = 120; this.humanize = 0; this.pending = new Set();
         this.element = document.createElement('section'); this.element.className = 'loop-sequencer';
-        this.element.innerHTML = `<div class="loop-head"><strong>LOOP · 16 PASOS</strong><span data-status>Listo</span></div><div class="loop-grid"></div><div class="loop-actions"><button data-action="play" type="button">▶ Reproducir</button><button data-action="clear" type="button">Limpiar</button><button data-action="midi" type="button">↓ MIDI</button><button data-action="wav" type="button">↓ WAV</button></div><div class="loop-email"><label>Enviar mi loop a <input data-email type="email" autocomplete="email" placeholder="tu@email.com"></label><button data-action="email-midi" type="button">✉ MIDI</button><button data-action="email-wav" type="button">✉ WAV</button></div>`;
+        this.element.innerHTML = `<div class="loop-head"><strong>24 COMPASES · POSICIÓN LIBRE</strong><span data-status>Listo</span></div><div class="loop-email"><button data-action="previous" type="button">←</button><label>Compás <select data-bar></select> / 24</label><button data-action="next" type="button">→</button></div><p class="loop-hint">Clic para colocar · arrastrá para mover · doble clic para borrar</p><div class="loop-grid loop-free-grid"></div><div class="loop-actions"><button data-action="play" type="button">▶ Reproducir</button><button data-action="clear" type="button">Limpiar</button><button data-action="midi" type="button">↓ MIDI</button><button data-action="wav" type="button">↓ WAV</button></div><div class="loop-email"><label>Enviar mi loop a <input data-email type="email" autocomplete="email" placeholder="tu@email.com"></label><button data-action="email-midi" type="button">✉ MIDI</button><button data-action="email-wav" type="button">✉ WAV</button></div>`;
+        const controls = document.createElement('div'); controls.className = 'loop-email';
+        controls.innerHTML = '<label>BPM <input data-bpm type="number" min="40" max="240" value="120"></label><label>Humanizar <input data-humanize type="range" min="0" max="50" value="0"><output data-humanize-value>0%</output></label>';
+        this.element.querySelector('.loop-grid').before(controls);
+        controls.querySelector('[data-bpm]').addEventListener('change', event => { this.bpm = Math.max(40, Math.min(240, Number(event.target.value) || 120)); event.target.value = this.bpm; if (this.timer) { this.stop(); this.play(); } });
+        controls.querySelector('[data-humanize]').addEventListener('input', event => { this.humanize = Number(event.target.value); controls.querySelector('[data-humanize-value]').textContent = `${this.humanize}%`; });
         const grid = this.element.querySelector('.loop-grid');
-        this.rows.forEach((row, r) => { const label = document.createElement('span'); label.textContent = row.label; grid.appendChild(label); row.steps.forEach((_, s) => { const cell = document.createElement('button'); cell.type = 'button'; cell.setAttribute('aria-label', `${row.label}, paso ${s + 1}`); cell.addEventListener('click', () => { row.steps[s] = !row.steps[s]; cell.classList.toggle('active', row.steps[s]); }); grid.appendChild(cell); }); });
+        const barSelect = this.element.querySelector('[data-bar]');
+        for (let bar = 0; bar < BARS; bar++) barSelect.add(new Option(String(bar + 1), String(bar)));
+        barSelect.addEventListener('change', () => this.showBar(Number(barSelect.value)));
+        this.element.querySelector('[data-action="previous"]').addEventListener('click', () => this.showBar((this.bar + BARS - 1) % BARS));
+        this.element.querySelector('[data-action="next"]').addEventListener('click', () => this.showBar((this.bar + 1) % BARS));
+        this.rows.forEach(row => { const label = document.createElement('span'); label.textContent = row.label; grid.appendChild(label); const lane = document.createElement('div'); lane.className = 'loop-lane'; lane.setAttribute('aria-label', `Línea de tiempo de ${row.label}`); lane.addEventListener('click', event => { if (event.target !== lane) return; const fraction = Math.max(0, Math.min(.9999, (event.clientX - lane.getBoundingClientRect().left) / lane.clientWidth)); row.notes.push(this.bar * STEPS_PER_BAR + fraction * STEPS_PER_BAR); this.showBar(this.bar); }); grid.appendChild(lane); row.lane = lane; });
         this.element.querySelector('[data-action="play"]').addEventListener('click', () => this.toggle());
-        this.element.querySelector('[data-action="clear"]').addEventListener('click', () => { this.rows.forEach(r => r.steps.fill(false)); this.element.querySelectorAll('.loop-grid button').forEach(b => b.classList.remove('active')); });
+        this.element.querySelector('[data-action="clear"]').addEventListener('click', () => { this.rows.forEach(r => { r.notes.length = 0; }); this.showBar(this.bar); });
         this.element.querySelector('[data-action="midi"]').addEventListener('click', () => this.exportMidi());
-        this.element.querySelector('[data-action="wav"]').addEventListener('click', () => download(wavFile(this.rows, this.isDrums), `${this.name}-loop.wav`, 'audio/wav'));
+        this.element.querySelector('[data-action="wav"]').addEventListener('click', () => download(wavFile(this.rows, this.isDrums, this.bpm), `${this.name}-loop.wav`, 'audio/wav'));
         this.element.querySelector('[data-action="email-midi"]').addEventListener('click', () => this.email('mid'));
         this.element.querySelector('[data-action="email-wav"]').addEventListener('click', () => this.email('wav'));
     }
     toggle() { this.timer ? this.stop() : this.play(); }
-    play() { this.step = 0; this.element.querySelector('[data-action="play"]').textContent = '■ Detener'; this.element.querySelector('[data-status]').textContent = 'En reproducción'; this.tick(); this.timer = setInterval(() => this.tick(), STEP_MS); }
-    tick() { this.rows.forEach(row => { if (row.steps[this.step]) { this.trigger(row.key); if (this.release) setTimeout(() => this.release(row.key), Math.min(105, STEP_MS - 10)); } }); this.step = (this.step + 1) % 16; }
-    stop() { clearInterval(this.timer); this.timer = null; this.element.querySelector('[data-action="play"]').textContent = '▶ Reproducir'; this.element.querySelector('[data-status]').textContent = 'Listo'; }
-    exportMidi() { const events = []; this.rows.forEach(row => row.steps.forEach((on, step) => { if (on) { const tick = step * 120; events.push({ tick, note: row.midi, off: false }, { tick: tick + 100, note: row.midi, off: true }); } })); download(midiFile(events, this.isDrums), `${this.name}-loop.mid`, 'audio/midi'); }
-    midiBytes() { const events = []; this.rows.forEach(row => row.steps.forEach((on, step) => { if (on) { const tick = step * 120; events.push({ tick, note: row.midi, off: false }, { tick: tick + 100, note: row.midi, off: true }); } })); return midiFile(events, this.isDrums); }
+    showBar(bar) { this.bar = bar; this.element.querySelector('[data-bar]').value = String(bar); this.rows.forEach(row => { row.lane.replaceChildren(); row.notes.filter(position => Math.floor(position / STEPS_PER_BAR) === bar).forEach(position => { const marker = document.createElement('button'); marker.type = 'button'; marker.className = 'loop-note'; marker.style.left = `${(position / STEPS_PER_BAR - bar) * 100}%`; marker.setAttribute('aria-label', `${row.label}, posición ${(position % STEPS_PER_BAR).toFixed(2)}`); marker.addEventListener('dblclick', () => { row.notes.splice(row.notes.indexOf(position), 1); this.showBar(bar); }); marker.addEventListener('pointerdown', event => { event.stopPropagation(); marker.setPointerCapture(event.pointerId); }); marker.addEventListener('pointermove', event => { if (!marker.hasPointerCapture(event.pointerId)) return; const fraction = Math.max(0, Math.min(.9999, (event.clientX - row.lane.getBoundingClientRect().left) / row.lane.clientWidth)); const index = row.notes.indexOf(position); if (index >= 0) { position = bar * STEPS_PER_BAR + fraction * STEPS_PER_BAR; row.notes[index] = position; marker.style.left = `${fraction * 100}%`; } }); row.lane.appendChild(marker); }); }); }
+    play() { this.step = 0; this.element.querySelector('[data-action="play"]').textContent = '■ Detener'; this.element.querySelector('[data-status]').textContent = 'En reproducción'; this.tick(); this.timer = setInterval(() => this.tick(), stepMs(this.bpm)); }
+    tick() { this.rows.forEach(row => row.notes.filter(position => position >= this.step && position < this.step + 1).forEach(position => { const delay = Math.max(0, (position - this.step) * stepMs(this.bpm) + (Math.random() - .5) * stepMs(this.bpm) * this.humanize / 100); const timer = setTimeout(() => { this.pending.delete(timer); this.trigger(row.key); if (this.release) { const off = setTimeout(() => { this.pending.delete(off); this.release(row.key); }, Math.min(105, stepMs(this.bpm) - 10)); this.pending.add(off); } }, delay); this.pending.add(timer); })); this.step = (this.step + 1) % TOTAL_STEPS; }
+    stop() { clearInterval(this.timer); this.timer = null; this.pending.forEach(clearTimeout); this.pending.clear(); this.element.querySelector('[data-action="play"]').textContent = '▶ Reproducir'; this.element.querySelector('[data-status]').textContent = 'Listo'; }
+    exportMidi() { download(this.midiBytes(), `${this.name}-loop.mid`, 'audio/midi'); }
+    midiBytes() { const events = []; this.rows.forEach(row => row.notes.forEach(position => { const tick = Math.round(position * 120); events.push({ tick, note: row.midi, off: false }, { tick: tick + 100, note: row.midi, off: true }); })); return midiFile(events, this.isDrums, this.bpm); }
     async email(format) {
         const email = this.element.querySelector('[data-email]').value.trim();
         if (!email) { this.element.querySelector('[data-email]').focus(); return; }
-        const bytes = format === 'wav' ? wavFile(this.rows, this.isDrums) : this.midiBytes();
+        const bytes = format === 'wav' ? wavFile(this.rows, this.isDrums, this.bpm) : this.midiBytes();
         const status = this.element.querySelector('[data-status]'); status.textContent = 'Enviando…';
         try {
             const response = await fetch(`${window.MARTINQUEST_API_URL || 'http://localhost:8080'}/api/loops/email`, {

@@ -170,6 +170,25 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
         }
         break;
     }
+    case 'katana': {
+        holdInHand(primaryHand);
+        // One-handed arcade silhouette: wrapped hilt, small guard and a
+        // tapered, slightly curved single-edged blade beyond the fist.
+        grip(-12, 8, 0, 3.5);
+        line([[-14, -3], [-14, 3]], 3, 0xc7a15e);
+        line([[9, -5], [9, 5]], 3, 0x4b3541);
+        line([[9, -5], [9, 5]], 1, 0xe4bb6d);
+        shape([
+            [11, -2.6], [26, -3.2], [43 + push, -5.2],
+            [55 + push, -8], [50 + push, -3.4], [42 + push, 0.5],
+            [25, 1.8], [11, 2.3]
+        ], 0xc6d2dc, 0x45586a);
+        line([[13, 0.2], [31, -0.4], [46 + push, -3.7], [52 + push, -6.1]],
+            1.4, 0xf7fbfc);
+        resetAnchor();
+        if (attacking) arc([[40, -16], [55, -10], [62, 1]], 2);
+        break;
+    }
     default:
         break;
     }
