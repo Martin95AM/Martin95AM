@@ -125,11 +125,11 @@ export default class WorldScene extends Phaser.Scene {
 
     update() {
         this.combat.update();
-        // Miyagi circles the tatami unless a player-facing moment needs him
-        // planted: dialogue, kata/strike visuals, menus and training commands.
+        // Miyagi pauses only for the brief kata beat or a real attack, then
+        // resumes his patrol with the articulated walking animation.
         this.npcs.forEach(npc => npc.update({
             paused: this.dialogSystem.visible || this.weaponMenuOpen || this.isDoingPushups ||
-                this.combat.actions.has(npc) || this.combat.visuals.get(npc)?.visible ||
+                this.combat.actions.has(npc) || Boolean(this.combat.kataAction) ||
                 this.eliasState === 'training'
         }));
         if (this.weaponMenuOpen) {

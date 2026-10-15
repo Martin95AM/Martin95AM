@@ -1,56 +1,34 @@
 import { DIRECTIONS } from './rules.mjs';
 import { illustratedFrames } from '../art/illustrated.js';
 
-// Coordinates on the normalized 96×144 illustrated frame. The same pivot and
-// fist coordinates drive the pose art and the weapon grip, preventing drift.
+// Cut the approved illustration at the shoulder/elbow and hip/knee. The thigh
+// leads a kick; the shin extends only after the knee has been lifted.
 const ARM = {
-    pivot: [70, 42], hand: [75, 78],
-    outline: [[67, 39], [75, 35], [82, 45], [86, 57], [87, 68],
-        [84, 82], [77, 88], [65, 82], [65, 65], [66, 51]]
+    shoulder: [70, 43], elbow: [78, 62], hand: [77, 79],
+    upper: [[66, 38], [75, 35], [83, 44], [87, 58], [80, 67], [68, 65], [65, 52]],
+    lower: [[70, 59], [86, 57], [87, 69], [84, 83], [77, 89], [65, 82], [65, 65]]
 };
 const LEG = {
-    pivot: [56, 82],
-    outline: [[49, 78], [62, 77], [70, 88], [78, 106],
-        [85, 133], [82, 140], [63, 140], [56, 119], [49, 94]]
+    hip: [56, 82], knee: [68, 106],
+    upper: [[49, 77], [63, 77], [72, 88], [77, 105], [68, 113], [55, 105], [49, 94]],
+    lower: [[57, 101], [77, 102], [85, 133], [82, 141], [63, 141], [56, 119]]
 };
 
-const ANGLES = {
+// [weight shift, shoulder/hip angle, elbow/knee angle] in degrees.
+const POSES = {
     punch: {
-        right: { windup: 25, strike: -80, recover: -35 },
-        left: { windup: 25, strike: -80, recover: -35 },
-        up: { windup: -30, strike: -160, recover: -80 },
-        down: { windup: -50, strike: 5, recover: -20 }
+        windup: [-4, 18, 50], chamber: [-2, -26, -70],
+        strike: [2, -72, -22], follow: [3, -78, -14], recover: [0, -25, -64]
     },
     kick: {
-        right: { windup: 20, strike: -75, recover: -25 },
-        left: { windup: 20, strike: -75, recover: -25 },
-        up: { windup: 15, strike: -135, recover: -45 },
-        down: { windup: -30, strike: 15, recover: -10 }
+        windup: [1, -18, 48], chamber: [-2, -55, 83],
+        strike: [-3, -77, 13], follow: [-3, -72, 19], recover: [0, -36, 70]
+    },
+    block: {
+        windup: [0, -38, -75], chamber: [0, -52, -62],
+        strike: [0, -58, -55], follow: [0, -58, -55], recover: [0, -25, -64]
     }
 };
-const STRETCH = {
-    punch: { down: { strike: 1.35 } },
-    kick: { down: { strike: 1.30 } }
-};
-
-function rotated([x, y], [px, py], angle, stretch = 1) {
-    const radians = angle * Math.PI / 180;
-    const dx = x - px, dy = (y - py) * stretch;
-    return [px + dx * Math.cos(radians) - dy * Math.sin(radians),
-        py + dx * Math.sin(radians) + dy * Math.cos(radians)];
-}
-
-// World-space offsets from the actor centre, keyed by the hand on screen.
-export function combatHandOffsets(direction, phase = 'strike', type = 'punch') {
-    const angle = ANGLES[type]?.[direction]?.[phase] ?? 0;
-    const stretch = STRETCH[type]?.[direction]?.[phase] ?? 1;
-    const [movingX, movingY] = rotated(ARM.hand, ARM.pivot, angle, stretch);
-    const toWorld = ([x, y]) => ({ x: (x - 48) / 3, y: (y - 72) / 3 });
-    if (direction === 'left') {
-        return { [-1]: toWorld([96 - movingX, movingY]), [1]: toWorld([75, 78]) };
-    }
-    return { [-1]: toWorld([21, 78]), [1]: toWorld([movingX, movingY]) };
-}
 
 function polygon(ctx, vertices) {
     ctx.beginPath();
@@ -69,43 +47,85 @@ function extractPart(frame, outline) {
     return part;
 }
 
-function drawPose(ctx, frame, direction, type, phase, parts) {
-    const part = type === 'kick' ? LEG : ARM;
-    const angle = ANGLES[type][direction][phase];
-    const stretch = STRETCH[type]?.[direction]?.[phase] ?? 1;
+function angles(type, direction, phase) {
+    const [lean, upper, lower] = POSES[type][phase];
+    if (type === 'kick' && direction === 'down') {
+        // A forward kick is foreshortened, not a straight leg at the floor.
+        return [lean, upper * 0.68, lower * 0.72];
+    }
+    if (type === 'kick' && direction === 'up') return [lean, upper * 1.08, lower * 0.9];
+    return [lean, upper, lower];
+}
+
+function rotatePoint([x, y], [px, py], degrees) {
+    const radians = degrees * Math.PI / 180;
+    const dx = x - px, dy = y - py;
+    return [px + dx * Math.cos(radians) - dy * Math.sin(radians),
+        py + dx * Math.sin(radians) + dy * Math.cos(radians)];
+}
+
+function jointPoint(point, root, joint, upper, lower) {
+    return rotatePoint(rotatePoint(point, joint, lower), root, upper);
+}
+
+// World-space weapon grip follows the same shoulder and elbow as the art.
+export function combatHandOffsets(direction, phase = 'strike', type = 'punch') {
+    const [lean, upper, lower] = angles(type, direction, phase);
+    const [handX, handY] = jointPoint(ARM.hand, ARM.shoulder, ARM.elbow, upper, lower);
+    const moving = [(handX + lean - 48) / 3, (handY - 72) / 3];
+    if (direction === 'left') moving[0] *= -1;
+    return { [-1]: { x: direction === 'left' ? moving[0] : -9, y: moving[1] },
+        [1]: { x: direction === 'left' ? 9 : moving[0], y: moving[1] } };
+}
+
+function drawJointed(ctx, upperImage, lowerImage, root, joint, upper, lower) {
     ctx.save();
-    ctx.translate(48, 24);
+    ctx.translate(...root);
+    ctx.rotate(upper * Math.PI / 180);
+    ctx.translate(-root[0], -root[1]);
+    ctx.save();
+    ctx.translate(...joint);
+    ctx.rotate(lower * Math.PI / 180);
+    ctx.translate(-joint[0], -joint[1]);
+    ctx.drawImage(lowerImage, 0, 0);
+    ctx.restore();
+    ctx.drawImage(upperImage, 0, 0);
+    ctx.restore();
+}
+
+function drawPose(ctx, frame, direction, type, phase, parts) {
+    const limb = type === 'kick' ? LEG : ARM;
+    const [lean, upper, lower] = angles(type, direction, phase);
+    ctx.save();
+    ctx.translate(48 + lean, 24 + (phase === 'chamber' ? 1 : 0));
     if (direction === 'left') { ctx.translate(96, 0); ctx.scale(-1, 1); }
     ctx.drawImage(frame, 0, 0);
-
-    // Remove only the moving limb, preserving the approved head, gi and belt.
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
-    polygon(ctx, part.outline);
-    ctx.fill();
+    for (const outline of [limb.upper, limb.lower]) {
+        polygon(ctx, outline);
+        ctx.fill();
+    }
     ctx.restore();
-
-    ctx.save();
-    ctx.translate(...part.pivot);
-    ctx.rotate(angle * Math.PI / 180);
-    ctx.scale(1, stretch);
-    ctx.translate(-part.pivot[0], -part.pivot[1]);
-    ctx.drawImage(type === 'kick' ? parts.leg : parts.arm, 0, 0);
-    ctx.restore();
-    // Keep the original sleeve/hip over the rotating cutout. This covers the
-    // pivot seam and makes the extended limb visibly emerge from the body.
-    if (type === 'punch') ctx.drawImage(frame, 63, 34, 12, 14, 63, 34, 12, 14);
-    else ctx.drawImage(frame, 48, 75, 21, 18, 48, 75, 21, 18);
+    const images = type === 'kick' ? parts.kick : parts.punch;
+    drawJointed(ctx, images.upper, images.lower,
+        type === 'kick' ? LEG.hip : ARM.shoulder,
+        type === 'kick' ? LEG.knee : ARM.elbow, upper, lower);
+    if (type === 'kick') ctx.drawImage(frame, 49, 77, 15, 9, 49, 77, 15, 9);
+    else ctx.drawImage(frame, 65, 38, 11, 11, 65, 38, 11, 11);
     ctx.restore();
 }
 
 export function createCombatPoses(scene) {
     for (const character of ['guard', 'martin']) {
         const frame = illustratedFrames.get(character);
-        const parts = { arm: extractPart(frame, ARM.outline), leg: extractPart(frame, LEG.outline) };
+        const parts = {
+            punch: { upper: extractPart(frame, ARM.upper), lower: extractPart(frame, ARM.lower) },
+            kick: { upper: extractPart(frame, LEG.upper), lower: extractPart(frame, LEG.lower) }
+        };
         for (const direction of Object.keys(DIRECTIONS)) {
-            for (const type of ['punch', 'kick']) {
-                for (const phase of ['windup', 'strike', 'recover']) {
+            for (const type of Object.keys(POSES)) {
+                for (const phase of Object.keys(POSES[type])) {
                     const key = `${character}-${direction}-${type}-${phase}`;
                     if (scene.textures.exists(key)) continue;
                     const texture = scene.textures.createCanvas(key, 192, 192);

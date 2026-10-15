@@ -201,7 +201,7 @@ export default class StudioScene extends Phaser.Scene {
             promptX = 320;
             promptY = 180 - 35;
         } else if (distToTorii < 80 && !this.dialogSystem.visible && !this.toriiOpened) {
-            activePrompt = "Aprieta Q para pasar al otro Mapa";
+            activePrompt = "Q: ir al Dojo · golpes P/O · Miyagi M";
             promptX = this.toriiGate.x;
             promptY = this.toriiGate.y - 55;
         }

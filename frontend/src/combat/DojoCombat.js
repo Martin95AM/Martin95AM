@@ -14,6 +14,7 @@ export default class DojoCombat {
         this.hits = { player: 0, sensei: 0 };
         this.kataStep = -1;
         this.nextKataAt = 0;
+        this.kataAction = null;
         this.stopped = false;
         createCombatPoses(scene);
         this.visuals = new Map([this.player, this.sensei].map(actor => [
@@ -60,8 +61,8 @@ export default class DojoCombat {
         const visual = this.visuals.get(actor);
         const character = actor === this.player ? 'martin' : 'guard';
         actor.setVisible(false);
-        const animation = pose === 'block' ? 'punch-windup' : `${pose}-${phase}`;
-        visual.setTexture(`${character}-${direction}-${animation}`).setVisible(true);
+        actor.anims.stop();
+        visual.setTexture(`${character}-${direction}-${pose}-${phase}`).setVisible(true);
         visual.setPosition(actor.x, actor.y).setDepth(actor.y);
     }
 
@@ -77,7 +78,8 @@ export default class DojoCombat {
         this.scene.dialogSystem.hideDialog();
         this.scene.isDoingPushups = false;
         this.scene.inputManager.targetPosition = null;
-        this.player.anims.stop();
+        actor.anims.stop();
+        if (actor === this.sensei) this.kataAction = null;
         actor.setVelocity(0, 0);
         const weapon = actor === this.player && type === 'punch' ? this.scene.equippedWeapon : null;
         const strike = weapon
@@ -111,6 +113,10 @@ export default class DojoCombat {
         for (const [actor, action] of this.actions) {
             const strike = action.strike;
             const elapsed = now - action.started;
+            if (action.phase === 'windup' && elapsed >= strike.windup * 0.48) {
+                action.phase = 'chamber';
+                this.showPose(actor, action.type, action.direction, 'chamber');
+            }
             if (!action.resolved && elapsed >= strike.windup) {
                 action.resolved = true;
                 action.phase = 'strike';
@@ -121,31 +127,54 @@ export default class DojoCombat {
                     this.updateHud('El golpe no alcanzó. Acercate y mirá hacia tu rival.');
                 }
             }
-            const recoveryAt = strike.windup + Math.min(100, (strike.duration - strike.windup) / 2);
-            if (action.phase === 'strike' && elapsed >= recoveryAt) {
+            if (action.phase === 'strike' && elapsed >= strike.windup + 65) {
+                action.phase = 'follow';
+                this.showPose(actor, action.type, action.direction, 'follow');
+            }
+            const recoveryAt = Math.max(strike.windup + 110, strike.duration - 140);
+            if (action.phase === 'follow' && elapsed >= recoveryAt) {
                 action.phase = 'recover';
                 this.showPose(actor, action.type, action.direction, 'recover');
             }
             if (elapsed >= strike.duration) {
                 this.restore(actor);
                 this.actions.delete(actor);
-                if (actor === this.sensei) this.nextKataAt = now + 650;
+                if (actor === this.sensei) this.nextKataAt = now + 900;
             }
         }
 
-        const playerNearby = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.sensei.x, this.sensei.y) < 105;
-        // Let Miyagi patrol the dojo until Martin approaches.  At close range
-        // he returns to the watchful kata loop, which keeps the combat invite
-        // readable without pinning him in one place for the entire scene.
-        if (!this.actions.has(this.sensei) && playerNearby && !this.scene.dialogSystem.visible && now >= this.nextKataAt) {
-            const kata = [
-                ['left', 'block'], ['left', 'punch'], ['right', 'block'], ['right', 'punch'],
-                ['down', 'block'], ['down', 'kick'], ['up', 'block'], ['up', 'punch']
-            ];
-            this.kataStep = (this.kataStep + 1) % kata.length;
-            const [direction, pose] = kata[this.kataStep];
-            this.showPose(this.sensei, pose, direction);
-            this.nextKataAt = now + 650;
+        const playerNearby = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.sensei.x, this.sensei.y) < 125;
+        // Short, jointed demonstrations are separated by actual patrol steps.
+        // The old kata pose remained visible indefinitely and NPC.update()
+        // treated any visible pose as a permanent reason to stop walking.
+        if (this.kataAction && (this.scene.dialogSystem.visible || this.actions.has(this.sensei))) {
+            this.kataAction = null;
+            if (!this.actions.has(this.sensei)) this.restore(this.sensei);
+        }
+        if (!this.kataAction && !this.actions.has(this.sensei) && playerNearby &&
+            !this.scene.dialogSystem.visible && now >= this.nextKataAt) {
+            const sequence = ['block', 'punch', 'block', 'kick'];
+            this.kataStep = (this.kataStep + 1) % sequence.length;
+            this.kataAction = {
+                started: now, type: sequence[this.kataStep],
+                direction: facingTarget(this.sensei, this.player), phase: null
+            };
+            this.sensei.setVelocity(0, 0);
+            this.nextKataAt = now + 2150;
+        }
+        if (this.kataAction) {
+            const elapsed = now - this.kataAction.started;
+            if (elapsed >= 520) {
+                this.restore(this.sensei);
+                this.kataAction = null;
+            } else {
+                const phase = elapsed < 100 ? 'windup' : elapsed < 205 ? 'chamber'
+                    : elapsed < 295 ? 'strike' : elapsed < 370 ? 'follow' : 'recover';
+                if (phase !== this.kataAction.phase) {
+                    this.kataAction.phase = phase;
+                    this.showPose(this.sensei, this.kataAction.type, this.kataAction.direction, phase);
+                }
+            }
         }
         if (this.scene.dialogSystem.visible && !this.actions.has(this.sensei)) this.restore(this.sensei);
         for (const [actor, visual] of this.visuals) {
@@ -224,6 +253,7 @@ export default class DojoCombat {
     stop() {
         this.stopped = true;
         this.actions.clear();
+        this.kataAction = null;
         for (const actor of this.visuals.keys()) this.restore(actor);
         this.player.setVelocity(0, 0);
     }
