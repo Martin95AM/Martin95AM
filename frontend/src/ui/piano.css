@@ -16,6 +16,10 @@
 .piano-key.white.pressed { background: #e5b977; transform: translateY(2px); }.piano-key.black.pressed { background: #9a668d; transform: translateY(2px); }
 .piano-key:focus-visible { outline: 3px solid #ffca64; outline-offset: -3px; }
 .piano-rack { margin-top: 25px; border: 1px solid #665578; border-radius: 10px; padding: 16px; background: #141627bb; }
+.loop-sequencer { margin-top: 24px; padding: 14px; border: 1px solid #78608c; border-radius: 10px; background: #10121dcc; }
+.loop-head { display:flex; justify-content:space-between; color:#ffd99b; font-size:12px; letter-spacing:.08em; margin-bottom:10px; }.loop-head span { color:#9ee2b1; }
+.loop-grid { display:grid; grid-template-columns: 76px repeat(16, minmax(12px, 1fr)); gap:3px; align-items:center; }.loop-grid span { font-size:11px; color:#e6dbe9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.loop-grid button { min-width:0; height:17px; padding:0; border:1px solid #715d7d; border-radius:3px; background:#2e2d3d; cursor:pointer; }.loop-grid button.active { background:#edbf69; border-color:#fff0bd; box-shadow:0 0 7px #edbf6999; }.loop-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }.loop-actions button { border:1px solid #c49561; border-radius:5px; padding:6px 9px; color:#fff2dc; background:#49374a; cursor:pointer; font:inherit; font-size:12px; }.loop-actions button:hover { background:#74526c; }
+.loop-email { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin-top:10px; font-size:12px; color:#e6dbe9; }.loop-email input { width:min(190px, 45vw); padding:6px; border:1px solid #715d7d; border-radius:5px; color:#fff; background:#242337; }.loop-email button { border:1px solid #c49561; border-radius:5px; padding:6px 9px; color:#fff2dc; background:#49374a; cursor:pointer; }
 .piano-section-heading { display: flex; justify-content: space-between; margin-bottom: 13px; }.piano-live { color: #8fe1ac; }
 .piano-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .piano-controls fieldset { min-width: 0; margin: 0; padding: 13px; border: 1px solid #6d5c78; border-radius: 8px; }
@@ -25,3 +29,4 @@
 .piano-controls input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: #e9bd69; cursor: pointer; }
 .piano-footer { margin: 15px 0 0; text-align: center; letter-spacing: .06em; }
 @media (max-width: 620px) { .piano-panel { padding: 16px; }.piano-controls { grid-template-columns: 1fr; }.piano-key span { display: none; }.piano-key kbd { font-size: 12px; } }
+@media (max-width:620px) { .loop-grid { grid-template-columns:55px repeat(16, minmax(9px, 1fr)); gap:2px; }.loop-grid button { height:14px; } }

@@ -19,6 +19,7 @@
 .drum-pad.playing, .drum-pad:active { transform: translateY(4px); box-shadow: 0 1px 0 #1b292b, inset 0 2px 10px #17262699; filter: brightness(1.25); }
 .drum-pad:focus-visible { outline: 3px solid #ffe6a9; outline-offset: 2px; }
 .drum-rack { margin-top: 24px; padding: 16px; border: 1px solid #809081; border-radius: 10px; background: #182b2cbb; }
+.drum-panel .loop-sequencer { border-color:#839481; background:#142729cc; }.drum-panel .loop-grid span { color:#e4e8d8; }.drum-panel .loop-grid button { border-color:#607873; background:#294144; }.drum-panel .loop-grid button.active { background:#e5b56a; border-color:#fff0bc; }.drum-panel .loop-actions button { border-color:#c99b65; background:#415150; }.drum-panel .loop-actions button:hover { background:#657365; }
 .drum-rack-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 13px; }
 .drum-live { color: #a8e7ad; }
 .drum-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

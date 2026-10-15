@@ -1,4 +1,5 @@
 import DrumEngine, { DRUM_PADS } from '../audio/DrumEngine.js';
+import LoopSequencer from '../audio/LoopSequencer.js';
 import './drum.css';
 
 export default class DrumPanel {
@@ -52,6 +53,11 @@ export default class DrumPanel {
         });
 
         this.root.querySelector('.drum-close').addEventListener('click', () => this.close());
+        this.sequencer = new LoopSequencer({
+            rows: DRUM_PADS.map((pad, index) => ({ ...pad, midi: [36, 38, 42, 46, 45, 49][index] })),
+            isDrums: true, name: 'bateria', trigger: key => this.hit(key)
+        });
+        this.root.querySelector('.drum-rack').before(this.sequencer.element);
         this.root.addEventListener('pointerdown', event => {
             if (event.target === this.root) this.close();
         });
@@ -141,6 +147,7 @@ export default class DrumPanel {
         window.removeEventListener('keyup', this.onKeyUp, true);
         window.removeEventListener('blur', this.onBlur);
         this.root.remove();
+        this.sequencer.destroy();
         this.engine.destroy();
     }
 }

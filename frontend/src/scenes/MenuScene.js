@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../utils/Constants.js';
+import SaveManager from '../managers/SaveManager.js';
 
 export default class MenuScene extends Phaser.Scene {
 
@@ -48,6 +49,7 @@ export default class MenuScene extends Phaser.Scene {
             }
         ).setOrigin(0.5);
 
+        const savedGame = SaveManager.load();
         const labels = ["Nueva Partida", "Continuar", "Opciones"];
         this.menuItems = labels.map((label, index) => {
             const item = this.add.text(
@@ -60,6 +62,7 @@ export default class MenuScene extends Phaser.Scene {
                 }
             ).setOrigin(0.5);
 
+            if (label === 'Continuar' && !savedGame) item.setAlpha(.42);
             item.setInteractive({ useHandCursor: true });
             item.on("pointerover", () => {
                 this.selectedIndex = index;
@@ -130,7 +133,14 @@ export default class MenuScene extends Phaser.Scene {
 
     confirmSelection() {
         if (this.selectedIndex === 0) {
+            SaveManager.clear();
             this.scene.start("WorldScene");
+            return;
+        }
+        if (this.selectedIndex === 1) {
+            const save = SaveManager.load();
+            if (save) this.scene.start(save.scene, save);
+            else this.cameras.main.shake(150, 0.003);
             return;
         }
 

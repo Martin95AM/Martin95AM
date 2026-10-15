@@ -5,6 +5,7 @@ import NPC from "../npc/NPC.js";
 import DialogSystem from "../npc/DialogSystem.js";
 import PianoPanel from "../ui/PianoPanel.js";
 import DrumPanel from "../ui/DrumPanel.js";
+import SaveManager from '../managers/SaveManager.js';
 
 export default class StudioScene extends Phaser.Scene {
 
@@ -12,14 +13,14 @@ export default class StudioScene extends Phaser.Scene {
         super("StudioScene");
     }
 
-    create() {
+    create(data = {}) {
         // The illustrated room is scaled to the existing 640x640 game world.
         this.add.image(0, 0, 'studio_cozy_drums').setOrigin(0, 0).setDisplaySize(640, 640);
         this.createStudioAtmosphere();
 
         // Spawn Martin (the player) at (320, 320)
         const preview = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('preview') : null;
-        const start = preview === 'studio' ? { x: 470, y: 395 } : preview === 'drums' ? { x: 215, y: 435 } : { x: 320, y: 320 };
+        const start = data.player ?? (preview === 'studio' ? { x: 470, y: 395 } : preview === 'drums' ? { x: 215, y: 435 } : { x: 320, y: 320 });
         this.player = new Player(this, start.x, start.y);
         this.player.setTexture('martin_casual', 0);
 
@@ -35,6 +36,8 @@ export default class StudioScene extends Phaser.Scene {
         this.dialogSystem = new DialogSystem(this);
         this.pianoPanel = new PianoPanel();
         this.drumPanel = new DrumPanel();
+        this.events.on('shutdown', () => this.saveGame());
+        this.time.addEvent({ delay: 5000, loop: true, callback: () => this.saveGame() });
         this.createPianoCorner();
         this.createDrumCorner();
 
@@ -127,6 +130,11 @@ export default class StudioScene extends Phaser.Scene {
             this.pianoPanel.destroy();
             this.drumPanel.destroy();
         });
+    }
+
+    saveGame() {
+        if (!this.player) return;
+        SaveManager.save({ scene: 'StudioScene', player: { x: Math.round(this.player.x), y: Math.round(this.player.y) } });
     }
 
     createStudioAtmosphere() {

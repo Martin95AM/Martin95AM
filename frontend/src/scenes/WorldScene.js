@@ -9,6 +9,21 @@ import DojoCombat from "../combat/DojoCombat.js";
 import { ART_SCALE } from "../art/characters.js";
 import { drawWeapon } from "../art/weapons.js";
 import { combatHandOffsets } from "../combat/poses.js";
+import SaveManager from '../managers/SaveManager.js';
+
+const ARSENAL = {
+    bo: { name: 'Bo', color: 0xb9783d, reach: 76, cooldown: 500, windup: 150, duration: 400 },
+    sai: { name: 'Sai', color: 0xd7e0e5, reach: 50, cooldown: 330, windup: 95, duration: 280 },
+    tonfa: { name: 'Tonfa', color: 0x704225, reach: 46, cooldown: 390, windup: 110, duration: 320 },
+    nunchaku: { name: 'Nunchaku', color: 0xc88b43, reach: 61, cooldown: 360, windup: 120, duration: 330 },
+    kamas: { name: 'Kamas', color: 0xd4dde7, reach: 58, cooldown: 410, windup: 105, duration: 350 },
+    katana: { name: 'Katana', color: 0xdce9f2, reach: 69, cooldown: 590, windup: 205, duration: 480 }
+};
+const HELD_WEAPON_SCALE = {
+    bo: 0.72, sai: 0.48, tonfa: 0.70, nunchaku: 0.67, kamas: 0.62, katana: 0.52
+};
+const RACK_DISTANCE = 62;
+const TATAMI = { left: 145, right: 495, top: 165, bottom: 470 };
 
 export default class WorldScene extends Phaser.Scene {
 
@@ -16,7 +31,7 @@ export default class WorldScene extends Phaser.Scene {
         super("WorldScene");
     }
 
-    create() {
+    create(data = {}) {
 
         const map = this.make.tilemap({ key: 'villa' });
 
@@ -24,7 +39,7 @@ export default class WorldScene extends Phaser.Scene {
         this.add.image(0, 0, 'dojo').setOrigin(0, 0);
         this.createDojoAtmosphere();
 
-        this.player = new Player(this, 320, 380);
+        this.player = new Player(this, data.player?.x ?? 320, data.player?.y ?? 380);
 
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -38,6 +53,8 @@ export default class WorldScene extends Phaser.Scene {
         this.gameManager = new GameManager(this);
         this.inventory = new Inventory(this);
         this.dialogSystem = new DialogSystem(this);
+        this.events.on('shutdown', () => this.saveGame());
+        this.time.addEvent({ delay: 5000, loop: true, callback: () => this.saveGame() });
 
         this.npcs = [
             new NPC(this, 320, 320, 'guard', 'Miyagi', [
@@ -58,6 +75,8 @@ export default class WorldScene extends Phaser.Scene {
         this.equippedWeapon = null;
         this.weaponMenuOpen = false;
         this.weaponGraphics = this.add.graphics().setDepth(1000);
+        this.droppedWeapons = [];
+        this.restoreDroppedWeapons();
         this.createWeaponMenu();
 
         // Torii Gate Exit Door (Interactive Spot 2) - Lowered slightly to y = 65
@@ -109,22 +128,31 @@ export default class WorldScene extends Phaser.Scene {
         this.eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
         this.qKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
         this.fKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+        this.disarmKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G);
         this.escapeKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         this.weaponKeys = this.input.keyboard.addKeys({
             bo: Phaser.Input.Keyboard.KeyCodes.ONE,
             sai: Phaser.Input.Keyboard.KeyCodes.TWO,
             tonfa: Phaser.Input.Keyboard.KeyCodes.THREE,
             nunchaku: Phaser.Input.Keyboard.KeyCodes.FOUR,
-            kamas: Phaser.Input.Keyboard.KeyCodes.FIVE
+            kamas: Phaser.Input.Keyboard.KeyCodes.FIVE,
+            katana: Phaser.Input.Keyboard.KeyCodes.SIX
         });
 
         this.eliasState = 'idle'; // 'idle', 'talked', 'walking_away', 'training'
         this.isDoingPushups = false;
         this.combat = new DojoCombat(this);
+        this.createDisarmButton();
+    }
+
+    saveGame() {
+        if (!this.player) return;
+        SaveManager.save({ scene: 'WorldScene', player: { x: Math.round(this.player.x), y: Math.round(this.player.y) } });
     }
 
     update() {
         this.combat.update();
+        if (Phaser.Input.Keyboard.JustDown(this.disarmKey)) this.disarmWeapon();
         // Miyagi pauses only for the brief kata beat or a real attack, then
         // resumes his patrol with the articulated walking animation.
         this.npcs.forEach(npc => npc.update({
@@ -157,18 +185,26 @@ export default class WorldScene extends Phaser.Scene {
         const distToElias = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToRack = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.weaponRack.x, this.weaponRack.y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+        const nearbyDrop = this.nearestDroppedWeapon();
+        this.updateDisarmButton(distToRack);
 
         let activePrompt = null;
         let promptX = 0;
         let promptY = 0;
 
-        if (distToElias < 50 && !this.dialogSystem.visible) {
+        if (nearbyDrop && nearbyDrop.distance < 27 && !this.dialogSystem.visible && !this.weaponMenuOpen) {
+            activePrompt = this.equippedWeapon
+                ? 'G: soltar arma antes de recoger'
+                : `E: recoger ${nearbyDrop.drop.weapon.name}`;
+            promptX = nearbyDrop.drop.x;
+            promptY = nearbyDrop.drop.y - 26;
+        } else if (distToElias < 50 && !this.dialogSystem.visible) {
             activePrompt = "Pulsa E para hablar con Miyagi";
             promptX = this.npcs[0].x;
             promptY = this.npcs[0].y - 35;
-        } else if (distToRack < 62 && !this.dialogSystem.visible && !this.weaponMenuOpen) {
+        } else if (distToRack < RACK_DISTANCE && !this.dialogSystem.visible && !this.weaponMenuOpen) {
             activePrompt = this.equippedWeapon
-                ? `E: arsenal · Equipada: ${this.equippedWeapon.name}`
+                ? `E: arsenal · G: guardar ${this.equippedWeapon.name}`
                 : "Pulsa E para abrir el arsenal";
             promptX = this.weaponRack.x;
             promptY = this.weaponRack.y - 30;
@@ -249,20 +285,23 @@ export default class WorldScene extends Phaser.Scene {
 
         // Handle Q Key Interaction (Torii Gate Exit)
         if (Phaser.Input.Keyboard.JustDown(this.qKey)) {
-            this.handleInteraction();
+            this.handleInteraction('exit');
         }
     }
 
-    handleInteraction() {
+    handleInteraction(action = 'auto') {
         if (this.combat.playerBusy || this.toriiOpened) return;
         const distToElias = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToRack = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.weaponRack.x, this.weaponRack.y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+        const nearbyDrop = this.nearestDroppedWeapon();
 
-        if (distToElias < 50) {
+        if (action !== 'exit' && nearbyDrop && nearbyDrop.distance < 27) {
+            this.pickUpWeapon(nearbyDrop.drop);
+        } else if (action !== 'exit' && distToElias < 50) {
             this.dialogSystem.showDialog(this.npcs[0]);
             this.eliasState = 'talked';
-        } else if (distToRack < 62) {
+        } else if (action !== 'exit' && distToRack < RACK_DISTANCE) {
             this.openWeaponMenu();
         } else if (distToTorii < 80 && !this.toriiOpened) {
             this.combat.stop();
@@ -289,23 +328,138 @@ export default class WorldScene extends Phaser.Scene {
         plaque.setAlpha(0.96);
     }
 
+    createDisarmButton() {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'dojo-disarm-button';
+        button.addEventListener('click', () => this.disarmWeapon());
+        document.body.appendChild(button);
+        this.disarmButton = button;
+        this.positionDisarmButton = () => {
+            const canvas = this.game.canvas;
+            if (!canvas || !button.isConnected) return;
+            const rect = canvas.getBoundingClientRect();
+            button.style.left = `${Math.max(8, Math.min(window.innerWidth - button.offsetWidth - 8,
+                rect.right - button.offsetWidth - 14))}px`;
+            button.style.top = `${Math.max(8, rect.top + 14)}px`;
+        };
+        this.updateDisarmButton();
+        this.positionDisarmButton();
+        window.addEventListener('resize', this.positionDisarmButton);
+        this.scale.on('resize', this.positionDisarmButton);
+        this.events.once('shutdown', () => {
+            window.removeEventListener('resize', this.positionDisarmButton);
+            this.scale.off('resize', this.positionDisarmButton);
+            button.remove();
+        });
+    }
+
+    updateDisarmButton(distanceToRack = Infinity) {
+        if (!this.disarmButton) return;
+        this.disarmButton.disabled = !this.equippedWeapon || this.toriiOpened;
+        this.disarmButton.textContent = distanceToRack < RACK_DISTANCE
+            ? 'Guardar arma (G)' : 'Soltar arma (G)';
+    }
+
+    nearestDroppedWeapon() {
+        let nearest = null;
+        for (const drop of this.droppedWeapons) {
+            const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, drop.x, drop.y);
+            if (!nearest || distance < nearest.distance) nearest = { drop, distance };
+        }
+        return nearest;
+    }
+
+    persistDroppedWeapons() {
+        this.registry.set('dojoDroppedWeapons', this.droppedWeapons.map(({ weapon, x, y }) => ({
+            key: weapon.key, x, y
+        })));
+    }
+
+    drawDroppedWeapon({ key, x, y }) {
+        if (!ARSENAL[key]) return;
+        const shadow = this.add.ellipse(x, y + 4, 39, 8, 0x102b28, 0.43).setDepth(y - 1);
+        const icon = this.add.graphics().setDepth(y + 1);
+        drawWeapon(icon, key, x - 8, y, 'right', false,
+            key === 'bo' ? 0.48 : key === 'katana' ? 0.45 : 0.42);
+        const label = this.add.text(x, y - 15, ARSENAL[key].name, {
+            fontSize: '7px', fontFamily: 'monospace', color: '#fff4d4',
+            backgroundColor: '#12221dbb', padding: { x: 2, y: 1 }
+        }).setOrigin(0.5).setDepth(y + 2);
+        this.droppedWeapons.push({ x, y, weapon: { key, ...ARSENAL[key] }, shadow, icon, label });
+    }
+
+    restoreDroppedWeapons() {
+        const saved = this.registry.get('dojoDroppedWeapons');
+        if (Array.isArray(saved)) saved.forEach(entry => this.drawDroppedWeapon(entry));
+    }
+
+    disarmWeapon() {
+        if (!this.equippedWeapon || this.toriiOpened) return;
+        if (this.combat.playerBusy) {
+            this.combat.updateHud('Terminá el golpe antes de soltar el arma.');
+            return;
+        }
+        if (this.weaponMenuOpen) this.closeWeaponMenu();
+        this.inputManager.targetPosition = null;
+        const weapon = this.equippedWeapon;
+        const distanceToRack = Phaser.Math.Distance.Between(
+            this.player.x, this.player.y, this.weaponRack.x, this.weaponRack.y);
+        if (distanceToRack < RACK_DISTANCE) {
+            this.equippedWeapon = null;
+            this.combat.updateHud(`${weapon.name} guardada en el arsenal.`);
+        } else {
+            const facing = {
+                right: [20, 0], left: [-20, 0], up: [0, -20], down: [0, 20]
+            }[this.player.direction] || [0, 20];
+            let x = Phaser.Math.Clamp(this.player.x + facing[0], TATAMI.left, TATAMI.right);
+            let y = Phaser.Math.Clamp(this.player.y + facing[1], TATAMI.top, TATAMI.bottom);
+            const stacked = this.droppedWeapons.filter(drop =>
+                Phaser.Math.Distance.Between(x, y, drop.x, drop.y) < 20).length;
+            x = Phaser.Math.Clamp(x + (stacked % 3) * 10, TATAMI.left, TATAMI.right);
+            y = Phaser.Math.Clamp(y + Math.floor(stacked / 3) * 9, TATAMI.top, TATAMI.bottom);
+            this.drawDroppedWeapon({ key: weapon.key, x, y });
+            this.persistDroppedWeapons();
+            this.equippedWeapon = null;
+            this.combat.updateHud(`${weapon.name} quedó en el tatami. Acercate y presioná E para recogerla.`);
+        }
+        this.updateDisarmButton(distanceToRack);
+    }
+
+    pickUpWeapon(drop) {
+        if (this.equippedWeapon) {
+            this.combat.updateHud('Primero soltá el arma que llevás con G.');
+            return;
+        }
+        this.equippedWeapon = { ...drop.weapon };
+        for (const object of [drop.shadow, drop.icon, drop.label]) object.destroy();
+        this.droppedWeapons.splice(this.droppedWeapons.indexOf(drop), 1);
+        this.persistDroppedWeapons();
+        this.combat.updateHud(`${drop.weapon.name} recogida. P para usarla.`);
+        this.updateDisarmButton();
+    }
+
     createWeaponMenu() {
-        this.weaponMenu = this.add.container(150, 205).setVisible(false).setDepth(25000);
-        const shadow = this.add.rectangle(3, 4, 222, 128, 0x081018, 0.45);
-        const bg = this.add.rectangle(0, 0, 222, 128, 0x111827, 0.97)
+        // The rack is near the world edge, so its menu belongs to the HUD
+        // camera; a world-space menu was clipped by the zoomed camera.
+        this.weaponMenu = this.add.container(640, 245).setScale(1.45)
+            .setVisible(false).setDepth(25000);
+        const shadow = this.add.rectangle(3, 4, 236, 150, 0x081018, 0.45);
+        const bg = this.add.rectangle(0, 0, 236, 150, 0x111827, 0.97)
             .setStrokeStyle(2, 0xd2ae72);
-        const title = this.add.text(0, -49, 'ARSENAL DEL DOJO', {
+        const title = this.add.text(0, -61, 'ARSENAL DEL DOJO', {
             fontSize: '10px', color: '#ffe1a3', fontFamily: 'monospace', fontStyle: 'bold'
         }).setOrigin(0.5);
-        const options = this.add.text(-76, -35,
-            '1  BŌ         alcance largo\n2  SAI        doble estocada\n3  TONFA      defensa sólida\n4  NUNCHAKU   combo veloz\n5  KAMAS      corte cruzado', {
+        const options = this.add.text(-76, -47,
+            '1  BŌ         alcance largo\n2  SAI        doble estocada\n3  TONFA      defensa sólida\n4  NUNCHAKU   combo veloz\n5  KAMAS      corte cruzado\n6  KATANA     corte preciso', {
                 fontSize: '8px', color: '#e7edf2', fontFamily: 'monospace', lineSpacing: 5
             });
         const icons = this.add.graphics();
-        ['bo', 'sai', 'tonfa', 'nunchaku', 'kamas'].forEach((key, index) => {
-            drawWeapon(icons, key, -99, -31 + index * 14, 'right', false, 0.55);
+        Object.keys(ARSENAL).forEach((key, index) => {
+            drawWeapon(icons, key, -99, -43 + index * 14, 'right', false,
+                key === 'katana' ? 0.36 : 0.55);
         });
-        const hint = this.add.text(0, 51, '1–5 equipar  ·  ESC cerrar', {
+        const hint = this.add.text(0, 63, '1–6 equipar  ·  ESC cerrar', {
             fontSize: '7px', color: '#9dafc3', fontFamily: 'monospace'
         }).setOrigin(0.5);
         this.weaponMenu.add([shadow, bg, title, icons, options, hint]);
@@ -317,7 +471,7 @@ export default class WorldScene extends Phaser.Scene {
         this.weaponMenu.setVisible(true);
         this.promptBox.setVisible(false);
         this.promptText.setVisible(false);
-        this.combat.updateHud('Elegí un arma del arsenal con 1, 2, 3, 4 o 5.');
+        this.combat.updateHud('Elegí un arma del arsenal con 1, 2, 3, 4, 5 o 6.');
     }
 
     closeWeaponMenu() {
@@ -326,19 +480,13 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     handleWeaponSelection() {
-        const arsenal = {
-            bo: { name: 'Bo', color: 0xb9783d, reach: 76, cooldown: 500, windup: 150, duration: 400 },
-            sai: { name: 'Sai', color: 0xd7e0e5, reach: 50, cooldown: 330, windup: 95, duration: 280 },
-            tonfa: { name: 'Tonfa', color: 0x704225, reach: 46, cooldown: 390, windup: 110, duration: 320 },
-            nunchaku: { name: 'Nunchaku', color: 0xc88b43, reach: 61, cooldown: 360, windup: 120, duration: 330 },
-            kamas: { name: 'Kamas', color: 0xd4dde7, reach: 58, cooldown: 410, windup: 105, duration: 350 }
-        };
         for (const [key, keyObject] of Object.entries(this.weaponKeys)) {
             if (!Phaser.Input.Keyboard.JustDown(keyObject)) continue;
-            this.equippedWeapon = { key, ...arsenal[key] };
+            this.equippedWeapon = { key, ...ARSENAL[key] };
             this.closeWeaponMenu();
             this.showFloatingBubble(this.player.x, this.player.y, `${this.equippedWeapon.name} equipada · P para usar`);
-            this.combat.updateHud(`${this.equippedWeapon.name} equipada. P: arma · O: patada.`);
+            this.combat.updateHud(`${this.equippedWeapon.name} equipada. P: arma · O: patada · G: soltar.`);
+            this.updateDisarmButton();
             return;
         }
         if (Phaser.Input.Keyboard.JustDown(this.escapeKey)) this.closeWeaponMenu();
@@ -351,9 +499,7 @@ export default class WorldScene extends Phaser.Scene {
         const action = this.combat.actions.get(this.player);
         const armedAction = action?.type === 'punch' ? action : null;
         const direction = armedAction?.direction || this.player.direction;
-        const scale = {
-            bo: 0.72, sai: 0.48, tonfa: 0.70, nunchaku: 0.67, kamas: 0.62
-        }[this.equippedWeapon.key];
+        const scale = HELD_WEAPON_SCALE[this.equippedWeapon.key];
         const grips = armedAction ? combatHandOffsets(direction, armedAction.phase) : 9;
         drawWeapon(g, this.equippedWeapon.key, x, armedAction ? y : y + 2,
             direction, armedAction?.phase === 'strike', scale, grips);

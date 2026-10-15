@@ -1,4 +1,5 @@
 import PianoEngine, { PIANO_NOTES } from '../audio/PianoEngine.js';
+import LoopSequencer from '../audio/LoopSequencer.js';
 import './piano.css';
 
 export default class PianoPanel {
@@ -55,6 +56,12 @@ export default class PianoPanel {
             button.addEventListener('lostpointercapture', () => this.release(note.key));
         });
         this.root.querySelector('.piano-close').addEventListener('click', () => this.close());
+        this.sequencer = new LoopSequencer({
+            rows: PIANO_NOTES.filter(note => note.white !== undefined).slice(0, 6),
+            isDrums: false, name: 'piano',
+            trigger: key => this.press(key), release: key => this.release(key)
+        });
+        this.root.querySelector('.piano-rack').before(this.sequencer.element);
         this.root.querySelectorAll('[data-setting]').forEach(input => {
             input.addEventListener('input', () => {
                 const name = input.dataset.setting;
@@ -125,6 +132,7 @@ export default class PianoPanel {
         window.removeEventListener('keyup', this.onKeyUp, true);
         window.removeEventListener('blur', this.onBlur);
         this.root.remove();
+        this.sequencer.destroy();
         this.engine.destroy();
     }
 }
