@@ -85,7 +85,7 @@ export default class MachineRoomScene extends Phaser.Scene {
         g.lineStyle(1, 0x247d9d, 0.8);
         g.strokeRect(260, 235, 119, 37);
         g.lineStyle(1.5, 0x62edff, 0.95);
-        const phase = time * 0.004;
+        const phase = time * 0.0014;
         g.beginPath();
         for (let x = 264; x <= 333; x += 2) {
             const wave = Math.sin(x * 0.23 + phase) * (5 + 2 * Math.sin(phase * 0.6));
@@ -94,7 +94,7 @@ export default class MachineRoomScene extends Phaser.Scene {
         }
         g.strokePath();
         for (let i = 0; i < 11; i++) {
-            const height = 4 + Math.abs(Math.sin(phase * 1.7 + i * 0.65)) * 17;
+            const height = 4 + Math.abs(Math.sin(phase * 1.2 + i * 0.65)) * 17;
             g.fillStyle(i > 7 ? 0x73e5ff : 0x2dbadf, 0.85);
             g.fillRect(337 + i * 2.6, 266 - height, 1.6, height);
         }

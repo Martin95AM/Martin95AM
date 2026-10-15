@@ -60,8 +60,10 @@ export default class StudioScene extends Phaser.Scene {
             this.physics.add.collider(this.player, npc);
         });
 
-        // Torii Gate Exit Door (Interactive Spot) - Placed at the bottom center (320, 580)
-        this.toriiGate = this.physics.add.staticSprite(320, 580, 'torii', 0);
+        // Warm brass-and-wood academy door over the studio's existing exit.
+        this.createAcademyDoor();
+        this.toriiGate = this.add.rectangle(320, 580, 58, 48, 0, 0);
+        this.physics.add.existing(this.toriiGate, true);
         this.physics.add.collider(this.player, this.toriiGate);
         this.toriiOpened = false;
 
@@ -95,7 +97,7 @@ export default class StudioScene extends Phaser.Scene {
         }).setOrigin(0.5);
         
         const song1 = this.add.text(-34, -6, "1. Martin Quest", { fontSize: "4px", color: "#ffffff", fontFamily: "monospace" });
-        const song2 = this.add.text(-34, 0, "2. Dojo Beats", { fontSize: "4px", color: "#b3b3b3", fontFamily: "monospace" });
+        const song2 = this.add.text(-34, 0, "2. Academia Beats", { fontSize: "4px", color: "#b3b3b3", fontFamily: "monospace" });
         const song3 = this.add.text(-34, 6, "3. Kanto Retro", { fontSize: "4px", color: "#b3b3b3", fontFamily: "monospace" });
         
         const progressBarBg = this.add.rectangle(0, 15, 68, 2, 0x535353, 1);
@@ -168,16 +170,36 @@ export default class StudioScene extends Phaser.Scene {
     }
 
     createMachineRoomDoor() {
-        // Blue service door on the studio's right wall, above the piano.
+        // Armored, tank-like service hatch on the studio's right wall.
         this.machineDoorPosition = { x: 604, y: 250 };
         const door = this.add.container(604, 250).setDepth(4);
-        const glow = this.add.rectangle(0, 0, 38, 62, 0x41c9ee, 0.22);
-        const frame = this.add.rectangle(0, 0, 31, 55, 0x102b43).setStrokeStyle(3, 0x5adcf7);
-        const center = this.add.rectangle(0, 1, 20, 43, 0x0a192f).setStrokeStyle(1, 0x2299c4);
-        const light = this.add.rectangle(0, -17, 13, 3, 0x87f3ff);
-        const label = this.add.text(0, 39, 'MÁQUINAS', { fontSize: '7px', fontFamily: 'monospace', color: '#9bedff', backgroundColor: '#102638' }).setOrigin(0.5);
-        door.add([glow, frame, center, light, label]);
-        this.tweens.add({ targets: glow, alpha: 0.45, duration: 1000, yoyo: true, repeat: -1 });
+        const glow = this.add.rectangle(0, 0, 54, 72, 0x36bbd7, 0.14);
+        const frame = this.add.rectangle(0, 0, 47, 66, 0x283c46).setStrokeStyle(4, 0x728895);
+        const armor = this.add.rectangle(0, 0, 34, 53, 0x344b53).setStrokeStyle(2, 0x192b35);
+        const hatch = this.add.circle(0, 1, 15, 0x193849).setStrokeStyle(4, 0x7997a0);
+        const wheel = this.add.circle(0, 1, 6, 0x526c72).setStrokeStyle(2, 0xb8d0cc);
+        const gripH = this.add.rectangle(0, 1, 22, 3, 0xb8d0cc);
+        const gripV = this.add.rectangle(0, 1, 3, 22, 0xb8d0cc);
+        const bolts = [-1, 1].flatMap(x => [-1, 1].map(y => this.add.circle(x * 17, y * 25, 1.6, 0xc4d3cd)));
+        const light = this.add.rectangle(0, -31, 13, 3, 0x78e8fb);
+        const label = this.add.text(0, 41, 'MÁQUINAS', { fontSize: '7px', fontFamily: 'monospace', color: '#cbf4f7', backgroundColor: '#1d343e' }).setOrigin(0.5);
+        door.add([glow, frame, armor, hatch, wheel, gripH, gripV, ...bolts, light, label]);
+        this.tweens.add({ targets: light, alpha: 0.4, duration: 1500, yoyo: true, repeat: -1 });
+    }
+
+    createAcademyDoor() {
+        const door = this.add.container(320, 580).setDepth(5);
+        const threshold = this.add.rectangle(0, 28, 76, 10, 0x654934).setStrokeStyle(2, 0xb98c54);
+        const glow = this.add.rectangle(0, 0, 64, 65, 0xd5a85e, 0.13);
+        const frame = this.add.rectangle(0, 0, 62, 60, 0x5a3828).setStrokeStyle(4, 0xd3a66e);
+        const panel = this.add.rectangle(0, 1, 48, 47, 0x26413b).setStrokeStyle(2, 0x8e6f46);
+        this.academyDoorPanel = panel;
+        const seam = this.add.rectangle(0, 1, 2, 43, 0xc7985d);
+        const handles = [-1, 1].map(side => this.add.circle(side * 7, 4, 2.3, 0xf0ce8b));
+        const sconces = [-1, 1].map(side => this.add.rectangle(side * 33, -12, 4, 15, 0xf6cb79));
+        const plaque = this.add.text(0, -34, 'ACADEMIA', { fontSize: '8px', fontFamily: 'monospace', color: '#ffe0a3', backgroundColor: '#49352d' }).setOrigin(0.5);
+        door.add([threshold, glow, frame, panel, seam, ...handles, ...sconces, plaque]);
+        this.tweens.add({ targets: glow, alpha: 0.35, duration: 1600, yoyo: true, repeat: -1 });
     }
 
     update() {
@@ -230,7 +252,7 @@ export default class StudioScene extends Phaser.Scene {
             promptX = 320;
             promptY = 180 - 35;
         } else if (distToTorii < 80 && !this.dialogSystem.visible && !this.toriiOpened) {
-            activePrompt = "Q: ir al Dojo · golpes P/O · Miyagi M";
+            activePrompt = "Pulsa Q para entrar a la Academia";
             promptX = this.toriiGate.x;
             promptY = this.toriiGate.y - 55;
         }
@@ -309,7 +331,7 @@ export default class StudioScene extends Phaser.Scene {
             this.toggleSpotify();
         } else if ((action === 'exit' || action === 'auto') && distToTorii < 80 && !this.toriiOpened) {
             this.toriiOpened = true;
-            this.toriiGate.play('torii-open');
+            this.tweens.add({ targets: this.academyDoorPanel, alpha: 0, duration: 450 });
             this.physics.world.disableBody(this.toriiGate.body); // disable collision so player can walk through!
             
             // Hide real Spotify player on exit!
@@ -331,7 +353,7 @@ export default class StudioScene extends Phaser.Scene {
             this.player.setTexture('martin_casual_headphones', 0);
             this.spotifyUI.setVisible(true);
             if (spotifyDiv) spotifyDiv.style.display = 'block'; // Show real Spotify player!
-            this.showFloatingBubble(this.player.x, this.player.y, "🎧 Escuchando Dojo Beats...");
+            this.showFloatingBubble(this.player.x, this.player.y, "🎧 Escuchando Academia Beats...");
         } else {
             this.player.setTexture('martin_casual', 0);
             this.spotifyUI.setVisible(false);

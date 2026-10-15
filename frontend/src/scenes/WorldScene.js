@@ -58,7 +58,7 @@ export default class WorldScene extends Phaser.Scene {
 
         this.npcs = [
             new NPC(this, 320, 320, 'guard', 'Miyagi', [
-                'Bienvenido al Dojo'
+                'Bienvenido a la Academia'
             ], '', [
                 { x: 320, y: 320 }, { x: 390, y: 320 },
                 { x: 390, y: 366 }, { x: 318, y: 366 }
@@ -320,7 +320,7 @@ export default class WorldScene extends Phaser.Scene {
     createDojoAtmosphere() {
         const plaque = this.add.rectangle(320, 104, 106, 17, 0x25382f)
             .setStrokeStyle(1, 0xd2ae72).setDepth(2);
-        this.add.text(320, 104, 'DOJO MARTIN · 稽古', {
+        this.add.text(320, 104, 'ACADEMIA MARTIN · 稽古', {
             fontSize: '8px', color: '#ffe1a3', fontFamily: 'monospace'
         }).setOrigin(0.5).setDepth(3);
         const lights = [64, 582].map(x => this.add.circle(x, 49, 15, 0xffd47a, 0.09).setDepth(2));
@@ -447,7 +447,7 @@ export default class WorldScene extends Phaser.Scene {
         const shadow = this.add.rectangle(3, 4, 236, 150, 0x081018, 0.45);
         const bg = this.add.rectangle(0, 0, 236, 150, 0x111827, 0.97)
             .setStrokeStyle(2, 0xd2ae72);
-        const title = this.add.text(0, -61, 'ARSENAL DEL DOJO', {
+        const title = this.add.text(0, -61, 'ARSENAL DE LA ACADEMIA', {
             fontSize: '10px', color: '#ffe1a3', fontFamily: 'monospace', fontStyle: 'bold'
         }).setOrigin(0.5);
         const options = this.add.text(-76, -47,
