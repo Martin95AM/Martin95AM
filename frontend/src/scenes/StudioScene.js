@@ -43,7 +43,10 @@ export default class StudioScene extends Phaser.Scene {
             new NPC(this, 320, 420, 'tecnico_casual', 'Técnico', [
                 '¡Hola, Martin! Bienvenido a mi estudio de grabación.',
                 'Aquí es donde ocurre la magia de la música.'
-            ], '')
+            ], '', [
+                { x: 320, y: 420 }, { x: 374, y: 420 },
+                { x: 374, y: 462 }, { x: 320, y: 462 }
+            ])
         ];
 
         this.npcs.forEach((npc) => {
@@ -151,6 +154,9 @@ export default class StudioScene extends Phaser.Scene {
     }
 
     update() {
+        this.npcs.forEach(npc => npc.update({
+            paused: this.exiting || this.pianoPanel.opened || this.drumPanel.opened || this.dialogSystem.visible
+        }));
         if (this.exiting || this.pianoPanel.opened || this.drumPanel.opened) {
             this.player.setVelocity(0, 0);
             return;

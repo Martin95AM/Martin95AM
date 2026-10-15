@@ -118,6 +118,12 @@ export default class BootScene extends Phaser.Scene {
             frames: [{ key: 'martin', frame: 12 }]
         });
 
+        // Shared four-frame cadence for the NPCs.  The snappy 11 fps loop and
+        // planted first frame are intentionally closer to 90s arcade sprites
+        // than the floaty top-down RPG walk they replaced.
+        this.createCharacterMovementAnimations('miyagi', 'guard', 11);
+        this.createCharacterMovementAnimations('technician', 'tecnico_casual', 9);
+
         this.anims.create({
             key: 'torii-open',
             frames: this.anims.generateFrameNumbers('torii', { start: 0, end: 3 }),
@@ -248,6 +254,23 @@ export default class BootScene extends Phaser.Scene {
             });
         });
 
+    }
+
+    createCharacterMovementAnimations(prefix, texture, frameRate) {
+        const directions = { down: 0, left: 4, right: 8, up: 12 };
+        for (const [direction, start] of Object.entries(directions)) {
+            this.anims.create({
+                key: `${prefix}-walk-${direction}`,
+                frames: this.anims.generateFrameNumbers(texture, { start, end: start + 3 }),
+                frameRate,
+                repeat: -1
+            });
+            this.anims.create({
+                key: `${prefix}-idle-${direction}`,
+                frames: [{ key: texture, frame: start }],
+                frameRate: 1
+            });
+        }
     }
 
 }

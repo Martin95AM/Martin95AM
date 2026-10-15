@@ -16,8 +16,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.body.setSize(20 / ART_SCALE, 32 / ART_SCALE);
         this.body.setOffset(6 / ART_SCALE, 16 / ART_SCALE);
 
-        this.speed = 120;
-        this.runSpeed = 180;
+        this.speed = 126;
+        this.runSpeed = 196;
         this.direction = "down";
 
         this.cursors = scene.input.keyboard.createCursorKeys();
@@ -81,6 +81,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         }
 
         if (vx === 0 && vy === 0) {
+            this.anims.timeScale = 1;
             if (this.anims && this.anims.exists(`${prefix}idle-${this.direction}`)) {
                 this.anims.play(`${prefix}idle-${this.direction}`, true);
             }
@@ -88,7 +89,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         }
 
         if (this.anims && this.anims.exists(`${prefix}walk-${this.direction}`)) {
+            // A quick, readable loop gives the run the punch of 90s action
+            // games while the normal walk remains deliberate around NPCs.
             this.anims.play(`${prefix}walk-${this.direction}`, true);
+            this.anims.timeScale = (Math.abs(vx) + Math.abs(vy) > this.speed) ? 1.35 : 1;
         }
     }
 

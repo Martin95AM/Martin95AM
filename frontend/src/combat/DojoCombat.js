@@ -133,7 +133,11 @@ export default class DojoCombat {
             }
         }
 
-        if (!this.actions.has(this.sensei) && !this.scene.dialogSystem.visible && now >= this.nextKataAt) {
+        const playerNearby = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.sensei.x, this.sensei.y) < 105;
+        // Let Miyagi patrol the dojo until Martin approaches.  At close range
+        // he returns to the watchful kata loop, which keeps the combat invite
+        // readable without pinning him in one place for the entire scene.
+        if (!this.actions.has(this.sensei) && playerNearby && !this.scene.dialogSystem.visible && now >= this.nextKataAt) {
             const kata = [
                 ['left', 'block'], ['left', 'punch'], ['right', 'block'], ['right', 'punch'],
                 ['down', 'block'], ['down', 'kick'], ['up', 'block'], ['up', 'punch']

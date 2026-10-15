@@ -42,7 +42,10 @@ export default class WorldScene extends Phaser.Scene {
         this.npcs = [
             new NPC(this, 320, 320, 'guard', 'Miyagi', [
                 'Bienvenido al Dojo'
-            ], '')
+            ], '', [
+                { x: 320, y: 320 }, { x: 390, y: 320 },
+                { x: 390, y: 366 }, { x: 318, y: 366 }
+            ])
         ];
 
         this.npcs.forEach((npc) => {
@@ -122,6 +125,13 @@ export default class WorldScene extends Phaser.Scene {
 
     update() {
         this.combat.update();
+        // Miyagi circles the tatami unless a player-facing moment needs him
+        // planted: dialogue, kata/strike visuals, menus and training commands.
+        this.npcs.forEach(npc => npc.update({
+            paused: this.dialogSystem.visible || this.weaponMenuOpen || this.isDoingPushups ||
+                this.combat.actions.has(npc) || this.combat.visuals.get(npc)?.visible ||
+                this.eliasState === 'training'
+        }));
         if (this.weaponMenuOpen) {
             this.player.setVelocity(0, 0);
             this.handleWeaponSelection();
