@@ -10,19 +10,20 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
     const paired = key === 'sai' || key === 'tonfa' || key === 'kamas';
     const attachedToFists = handAnchors !== null;
     let anchorX = x, anchorY = y;
-    let activeFacing = facing, activeSide = side;
+    let activeFacing = facing, activeSide = side, activeScale = scale;
     const holdInHand = hand => {
         if (!attachedToFists) return;
         const grip = typeof handAnchors === 'number'
             ? { x: hand * handAnchors, y: 0 } : handAnchors[hand];
         anchorX = x + grip.x;
         anchorY = y + grip.y;
+        activeScale = key === 'sai' && hand !== primaryHand ? scale * 0.68 : scale;
         // Paired weapons have separate trajectories, so the rear weapon does
         // not visually merge with the one thrust from the leading hand.
         activeFacing = paired && hand !== primaryHand
             ? (key === 'sai' ? {
-                right: [-0.76, -0.65], left: [0.76, -0.65],
-                up: [-0.65, -0.76], down: [-0.65, 0.76]
+                right: [-0.78, 0.62], left: [0.78, 0.62],
+                up: [-0.62, 0.78], down: [-0.62, 0.78]
             } : {
                 right: [0.65, -0.76], left: [-0.65, -0.76],
                 up: [-0.45, -0.89], down: [-0.45, 0.89]
@@ -31,14 +32,14 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
     };
     const resetAnchor = () => {
         anchorX = x; anchorY = y;
-        activeFacing = facing; activeSide = side;
+        activeFacing = facing; activeSide = side; activeScale = scale;
     };
     const point = (forward, sideways) => ({
-        x: anchorX + (activeFacing[0] * forward + activeSide[0] * sideways) * scale,
-        y: anchorY + (activeFacing[1] * forward + activeSide[1] * sideways) * scale
+        x: anchorX + (activeFacing[0] * forward + activeSide[0] * sideways) * activeScale,
+        y: anchorY + (activeFacing[1] * forward + activeSide[1] * sideways) * activeScale
     });
     const line = (coords, width, color, alpha = 1) => {
-        graphics.lineStyle(Math.max(1, width * scale), color, alpha);
+        graphics.lineStyle(Math.max(1, width * activeScale), color, alpha);
         graphics.beginPath();
         coords.forEach(([forward, sideways], index) => {
             const p = point(forward, sideways);
@@ -50,7 +51,7 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
     const shape = (coords, fill, outline = 0x27343d) => {
         const points = coords.map(([forward, sideways]) => point(forward, sideways));
         graphics.fillStyle(fill, 1);
-        graphics.lineStyle(Math.max(1, scale), outline, 1);
+        graphics.lineStyle(Math.max(1, activeScale), outline, 1);
         graphics.fillPoints(points, true);
         graphics.strokePoints(points, true);
     };
@@ -87,9 +88,9 @@ export function drawWeapon(graphics, key, x, y, direction = 'right', attacking =
     case 'sai': {
         // Each sai is about one forearm long at the fighter's 32×48 scale.
         // The narrow central blade projects well past the two shorter guards.
-        const thrust = attacking ? 2 : 0;
         for (const hand of [-1, 1]) {
             holdInHand(hand);
+            const thrust = attacking && hand === primaryHand ? 2 : 0;
             const lateral = attachedToFists ? 0 : hand * 8;
             grip(-2, 7, lateral, 2.5);
             line([[7, lateral - 2.2], [7, lateral + 2.2]], 2.5, 0x48545f);

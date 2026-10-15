@@ -31,6 +31,33 @@ test('held sai has a longer middle blade and remains proportional to the fighter
         'rear sai is visible outside the torso instead of crossing it');
 });
 
+test('only the leading sai follows the punch; the guarding sai has less reach', () => {
+    for (const direction of ['right', 'left']) {
+        const guardingHand = direction === 'right' ? -1 : 1;
+        const leadingHand = -guardingHand;
+        const phases = ['windup', 'chamber', 'strike', 'follow', 'recover'];
+        const anchors = phases.map(phase => combatHandOffsets(direction, phase));
+        for (const anchor of anchors) {
+            assert.deepEqual(anchor[guardingHand], anchors[0][guardingHand],
+                'the far hand stays planted throughout the punch');
+        }
+        assert.ok(new Set(anchors.map(anchor => anchor[leadingHand].x.toFixed(2))).size > 1,
+            'the striking hand advances while the other stays still');
+
+        const graphics = new RecordingGraphics();
+        const hands = anchors[2];
+        drawWeapon(graphics, 'sai', 100, 100, direction, true, 0.48, hands);
+        const blades = graphics.polygons.filter(polygon => polygon.color === 0xc8d3d9);
+        const reach = (blade, hand) => Math.hypot(
+            blade.points[2].x - (100 + hands[hand].x),
+            blade.points[2].y - (100 + hands[hand].y)
+        );
+        const rear = reach(blades[guardingHand === -1 ? 0 : 1], guardingHand);
+        const front = reach(blades[leadingHand === -1 ? 0 : 1], leadingHand);
+        assert.ok(rear < front * 0.75, 'the far sai projects substantially less than the leading sai');
+    }
+});
+
 function distanceToSegment([px, py], [ax, ay], [bx, by]) {
     const dx = bx - ax, dy = by - ay;
     const lengthSquared = dx * dx + dy * dy;

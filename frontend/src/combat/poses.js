@@ -74,8 +74,12 @@ export function combatHandOffsets(direction, phase = 'strike', type = 'punch') {
     const [handX, handY] = jointPoint(ARM.hand, ARM.shoulder, ARM.elbow, upper, lower);
     const moving = [(handX + lean - 48) / 3, (handY - 72) / 3];
     if (direction === 'left') moving[0] *= -1;
-    return { [-1]: { x: direction === 'left' ? moving[0] : -9, y: moving[1] },
-        [1]: { x: direction === 'left' ? 9 : moving[0], y: moving[1] } };
+    // Only the striking hand follows the articulated punch. The opposite
+    // hand stays by the hip; it must not rise with the moving fist.
+    const guarding = { x: direction === 'left' ? 9 : -9, y: 2 };
+    return direction === 'left'
+        ? { [-1]: { x: moving[0], y: moving[1] }, [1]: guarding }
+        : { [-1]: guarding, [1]: { x: moving[0], y: moving[1] } };
 }
 
 function drawJointed(ctx, upperImage, lowerImage, root, joint, upper, lower) {
