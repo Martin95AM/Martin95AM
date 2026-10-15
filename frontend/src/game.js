@@ -3,6 +3,7 @@ import BootScene from './scenes/BootScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import WorldScene from './scenes/WorldScene.js';
 import StudioScene from './scenes/StudioScene.js';
+import MachineRoomScene from './scenes/MachineRoomScene.js';
 
 export default function Game() {
   const config = {
@@ -18,7 +19,7 @@ export default function Game() {
         debug: false
       }
     },
-    scene: [BootScene, MenuScene, WorldScene, StudioScene],
+    scene: [BootScene, MenuScene, WorldScene, StudioScene, MachineRoomScene],
   };
 
   return new Phaser.Game(config);

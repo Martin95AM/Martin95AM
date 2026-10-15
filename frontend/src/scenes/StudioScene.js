@@ -40,6 +40,7 @@ export default class StudioScene extends Phaser.Scene {
         this.time.addEvent({ delay: 5000, loop: true, callback: () => this.saveGame() });
         this.createPianoCorner();
         this.createDrumCorner();
+        this.createMachineRoomDoor();
 
         // The technician visits each workstation once before reshuffling the
         // order. Every target stays in walkable floor space beside its prop.
@@ -107,6 +108,7 @@ export default class StudioScene extends Phaser.Scene {
         this.lKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L);
         this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
         this.bKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+        this.mKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
         this.exiting = false;
         this.hasHeadphones = false;
 
@@ -130,6 +132,7 @@ export default class StudioScene extends Phaser.Scene {
             this.pianoPanel.destroy();
             this.drumPanel.destroy();
         });
+        this.saveGame();
     }
 
     saveGame() {
@@ -164,6 +167,19 @@ export default class StudioScene extends Phaser.Scene {
         this.physics.add.collider(this.player, this.drumCollider);
     }
 
+    createMachineRoomDoor() {
+        // Blue service door on the studio's right wall, above the piano.
+        this.machineDoorPosition = { x: 604, y: 250 };
+        const door = this.add.container(604, 250).setDepth(4);
+        const glow = this.add.rectangle(0, 0, 38, 62, 0x41c9ee, 0.22);
+        const frame = this.add.rectangle(0, 0, 31, 55, 0x102b43).setStrokeStyle(3, 0x5adcf7);
+        const center = this.add.rectangle(0, 1, 20, 43, 0x0a192f).setStrokeStyle(1, 0x2299c4);
+        const light = this.add.rectangle(0, -17, 13, 3, 0x87f3ff);
+        const label = this.add.text(0, 39, 'MÁQUINAS', { fontSize: '7px', fontFamily: 'monospace', color: '#9bedff', backgroundColor: '#102638' }).setOrigin(0.5);
+        door.add([glow, frame, center, light, label]);
+        this.tweens.add({ targets: glow, alpha: 0.45, duration: 1000, yoyo: true, repeat: -1 });
+    }
+
     update() {
         this.npcs.forEach(npc => npc.update({
             paused: this.exiting || this.pianoPanel.opened || this.drumPanel.opened || this.dialogSystem.visible
@@ -187,12 +203,17 @@ export default class StudioScene extends Phaser.Scene {
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 180);
         const distToPiano = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pianoPosition.x, this.pianoPosition.y);
         const distToDrums = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.drumPosition.x, this.drumPosition.y);
+        const distToMachineDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.machineDoorPosition.x, this.machineDoorPosition.y);
 
         let activePrompt = null;
         let promptX = 0;
         let promptY = 0;
 
-        if (distToPiano < 90 && !this.dialogSystem.visible) {
+        if (distToMachineDoor < 90 && !this.dialogSystem.visible) {
+            activePrompt = 'Pulsa M para entrar al cuarto de máquinas';
+            promptX = 510;
+            promptY = 195;
+        } else if (distToPiano < 90 && !this.dialogSystem.visible) {
             activePrompt = "Pulsa P para tocar el piano";
             promptX = this.pianoPosition.x;
             promptY = this.pianoPosition.y - 75;
@@ -251,6 +272,9 @@ export default class StudioScene extends Phaser.Scene {
         if (Phaser.Input.Keyboard.JustDown(this.bKey) && distToDrums < 82 && !this.dialogSystem.visible) {
             this.handleInteraction('drums');
         }
+        if (Phaser.Input.Keyboard.JustDown(this.mKey) && distToMachineDoor < 90 && !this.dialogSystem.visible) {
+            this.handleInteraction('machine-room');
+        }
     }
 
     handleInteraction(action = 'auto') {
@@ -259,8 +283,17 @@ export default class StudioScene extends Phaser.Scene {
         const distToTecnico = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 180);
+        const distToMachineDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.machineDoorPosition.x, this.machineDoorPosition.y);
 
-        if ((action === 'piano' || action === 'auto') && distToPiano < 90 && !this.dialogSystem.visible) {
+        if ((action === 'machine-room' || action === 'auto') && distToMachineDoor < 90 && !this.dialogSystem.visible) {
+            this.exiting = true;
+            this.inputManager.targetPosition = null;
+            this.player.setVelocity(0, 0);
+            const spotifyDiv = document.getElementById('spotify-player');
+            if (spotifyDiv) spotifyDiv.style.display = 'none';
+            this.cameras.main.fadeOut(500, 0, 0, 0);
+            this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('MachineRoomScene'));
+        } else if ((action === 'piano' || action === 'auto') && distToPiano < 90 && !this.dialogSystem.visible) {
             this.inputManager.targetPosition = null;
             this.pianoPanel.open();
             this.promptBox.setVisible(false);
