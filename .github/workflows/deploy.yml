@@ -50,7 +50,7 @@ jobs:
           const bundle = html.match(/src="\/Martin95AM\/(assets\/[^" ]+\.js)"/);
           assert.ok(bundle, 'Built entry script must exist');
           const code = readFileSync(`dist/${bundle[1]}`, 'utf8');
-          for (const name of ['Sensei', 'Técnico']) {
+          for (const name of ['Miyagi', 'Técnico']) {
             assert.ok(code.includes(`Pulsa E para hablar con ${name}`), `Missing ${name}`);
           }
           assert.ok(code.includes('Kamas'), 'Missing kamas in the published game');
