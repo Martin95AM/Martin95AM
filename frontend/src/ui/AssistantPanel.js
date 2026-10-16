@@ -3,7 +3,7 @@ import './assistant.css';
 export default class AssistantPanel {
     constructor() {
         this.opened = false;
-        this.sessionId = null;
+        this.history = [];
         this.apiUrl = import.meta.env.VITE_ASSISTANT_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : null);
         this.pending = false;
         this.recognition = null;
@@ -33,7 +33,7 @@ export default class AssistantPanel {
                     <button class="assistant-stop" type="button">Detener voz</button>
                     <p class="assistant-status" role="status"></p>
                 </div>
-                <p class="assistant-privacy">El reconocimiento de voz depende del navegador y puede procesar el audio en un servicio externo. También podés escribir sin usar el micrófono.</p>
+                <p class="assistant-privacy">Tus mensajes se envían a Cloudflare para generar respuestas. No escribas datos sensibles. El reconocimiento de voz depende del navegador y puede procesar el audio en otro servicio; también podés escribir sin usar el micrófono.</p>
             </section>`;
         document.body.appendChild(this.root);
         this.log = this.root.querySelector('.assistant-log');
@@ -148,15 +148,16 @@ export default class AssistantPanel {
             const response = await fetch(`${this.apiUrl.replace(/\/$/, '')}/api/assistant/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: question, sessionId: this.sessionId }),
+                body: JSON.stringify({ message: question, history: this.history }),
                 signal: AbortSignal.timeout(25000)
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.message || 'No pude responder ahora. Probá otra vez.');
-            if (typeof data.reply !== 'string' || !data.reply.trim() || typeof data.sessionId !== 'string') {
+            if (typeof data.reply !== 'string' || !data.reply.trim()) {
                 throw new Error('El servidor devolvió una respuesta incompleta. Probá otra vez.');
             }
-            this.sessionId = data.sessionId;
+            this.history.push({ role: 'user', content: question }, { role: 'assistant', content: data.reply.slice(0, 500) });
+            this.history = this.history.slice(-10);
             this.append('Asistente', data.reply);
             this.status.textContent = 'Lista para otra pregunta.';
             this.speak(data.reply);
@@ -197,7 +198,7 @@ export default class AssistantPanel {
     newConversation() {
         if (this.pending) return;
         this.stopVoice();
-        this.sessionId = null;
+        this.history = [];
         this.log.replaceChildren();
         this.append('Asistente', 'Hola de nuevo. ¿De qué te gustaría charlar?');
         this.status.textContent = 'Nueva charla iniciada.';

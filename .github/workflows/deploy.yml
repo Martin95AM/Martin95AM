@@ -35,19 +35,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-          cache-dependency-path: backend/pom.xml
-
-      - name: Compile backend
-        run: mvn -q -f backend/pom.xml test
-
-      - name: Test combat and weapon grip rules
-        run: node --test frontend/src/combat/rules.test.mjs frontend/src/art/weapons.test.mjs
+      - name: Test assistant, combat and weapon grip rules
+        run: node --test assistant-worker/src/index.test.js frontend/src/combat/rules.test.mjs frontend/src/art/weapons.test.mjs
 
       - name: Build
         env:
