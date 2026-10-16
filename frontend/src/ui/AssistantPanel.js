@@ -16,7 +16,7 @@ export default class AssistantPanel {
                     <div><span class="assistant-kicker">CUARTO DE MÁQUINAS · TERMINAL CENTRAL</span><h2 id="assistant-title">La voz del cuarto de máquinas</h2></div>
                     <button class="assistant-close" type="button" aria-label="Cerrar terminal">×</button>
                 </header>
-                <p class="assistant-intro">Conversemos sobre la trayectoria de Martín. Podés escribir o usar el micrófono; te responderé en texto y con una voz en español.</p>
+                <p class="assistant-intro">Estoy por acá para charlar sobre Martín. Podés escribirme o usar el micrófono.</p>
                 <div class="assistant-log" role="log" aria-live="polite" aria-label="Conversación"></div>
                 <form class="assistant-form">
                     <label for="assistant-question">Tu pregunta</label>
@@ -57,7 +57,7 @@ export default class AssistantPanel {
         };
         window.addEventListener('keydown', this.onKeyDown, true);
         this.setupMicrophone();
-        this.append('Sistema', 'Estoy lista para conversar sobre Martín: experiencia, formación, habilidades e idiomas. Solo usaré datos públicos aprobados.');
+        this.append('Asistente', 'Hola, ¿cómo va? Preguntame lo que quieras saber sobre Martín.');
         if (!this.synth) {
             this.root.querySelector('.assistant-stop').disabled = true;
             this.status.textContent = 'Este navegador no tiene síntesis de voz; las respuestas seguirán apareciendo en texto.';
