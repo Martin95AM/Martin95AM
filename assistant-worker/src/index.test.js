@@ -48,7 +48,7 @@ test('conserva el contexto de una charla completa y usa solo el perfil aprobado'
   assert.match(calls[4].options.messages[0].content, /PERFIL PÚBLICO APROBADO/);
   assert.match(calls[4].options.messages[0].content, /nivel/);
   assert.match(calls[4].options.messages[0].content, /no inventes/i);
-  assert.equal(calls[4].model, '@cf/meta/llama-3.1-8b-instruct-fp8');
+  assert.equal(calls[4].model, '@cf/meta/llama-3.3-70b-instruct-fp8-fast');
 });
 
 test('rechaza orígenes y entradas inválidas antes de gastar inferencia', async () => {

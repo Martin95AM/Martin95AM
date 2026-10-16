@@ -20,12 +20,12 @@ export default class AssistantPanel {
                     <div><span class="assistant-kicker">CUARTO DE MÁQUINAS · TERMINAL CENTRAL</span><h2 id="assistant-title">La voz del cuarto de máquinas</h2></div>
                     <button class="assistant-close" type="button" aria-label="Cerrar terminal">×</button>
                 </header>
-                <p class="assistant-intro">Estoy por acá para charlar sobre Martín. Podés escribirme o usar el micrófono.</p>
+                <p class="assistant-intro">Pasá, charlemos un rato. Si querés saber algo de Martín, preguntame. También podés usar el micrófono.</p>
                 <div class="assistant-log" role="log" aria-live="polite" aria-label="Conversación"></div>
                 <form class="assistant-form">
-                    <label for="assistant-question">Tu pregunta</label>
+                    <label for="assistant-question">Tu mensaje</label>
                     <div class="assistant-compose">
-                        <input id="assistant-question" name="question" type="text" maxlength="500" autocomplete="off" placeholder="¿Qué querés saber sobre Martín?" required>
+                        <input id="assistant-question" name="question" type="text" maxlength="500" autocomplete="off" placeholder="Escribime lo que quieras…" required>
                         <button class="assistant-mic" type="button" aria-label="Preguntar con micrófono">🎙 Hablar</button>
                         <button type="submit">Enviar</button>
                     </div>
@@ -64,7 +64,7 @@ export default class AssistantPanel {
         };
         window.addEventListener('keydown', this.onKeyDown, true);
         this.setupMicrophone();
-        this.append('Asistente', 'Hola, ¿cómo va? Preguntame lo que quieras saber sobre Martín.');
+        this.append('Voz del cuarto', 'Buenas, ¿cómo va? Pasá, charlemos.');
         if (!this.synth) {
             this.root.querySelector('.assistant-stop').disabled = true;
             this.status.textContent = 'Este navegador no tiene síntesis de voz; las respuestas seguirán apareciendo en texto.';
@@ -160,8 +160,8 @@ export default class AssistantPanel {
             }
             this.history.push({ role: 'user', content: question }, { role: 'assistant', content: data.reply.slice(0, 500) });
             this.history = this.history.slice(-10);
-            this.append('Asistente', data.reply);
-            this.status.textContent = 'Lista para otra pregunta.';
+            this.append('Voz del cuarto', data.reply);
+            this.status.textContent = 'Podés seguir charlando.';
             this.speak(data.reply);
         } catch (error) {
             this.status.textContent = error.name === 'TimeoutError'
@@ -185,7 +185,7 @@ export default class AssistantPanel {
         }
         const utterance = new SpeechSynthesisUtterance(reply);
         utterance.lang = 'es-AR';
-        utterance.rate = 0.92;
+        utterance.rate = 0.98;
         if (this.voice) utterance.voice = this.voice;
         utterance.onerror = () => {
             if (this.opened) this.status.textContent = 'No se pudo reproducir la voz; la respuesta sigue disponible en texto.';
@@ -202,7 +202,7 @@ export default class AssistantPanel {
         this.stopVoice();
         this.history = [];
         this.log.replaceChildren();
-        this.append('Asistente', 'Hola de nuevo. ¿De qué te gustaría charlar?');
+        this.append('Voz del cuarto', 'Acá estoy. ¿De qué charlamos?');
         this.status.textContent = 'Nueva charla iniciada.';
         this.input.focus();
     }
