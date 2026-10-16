@@ -36,7 +36,7 @@ export default class WorldScene extends Phaser.Scene {
         const map = this.make.tilemap({ key: 'villa' });
 
         // Render the beautiful 16-bit Dojo background
-        this.add.image(0, 0, 'dojo').setOrigin(0, 0);
+        this.add.image(0, 0, 'dojo').setOrigin(0, 0).setDisplaySize(640, 640);
         this.createDojoAtmosphere();
 
         this.player = new Player(this, data.player?.x ?? 320, data.player?.y ?? 380);
@@ -49,6 +49,11 @@ export default class WorldScene extends Phaser.Scene {
 
         this.inputManager = new InputManager(this);
         this.input.keyboard.enabled = true;
+
+        // Keep characters on the floor, in front of the exhibition wall.
+        this.upperWallCollider = this.add.rectangle(320, 50, 640, 100, 0, 0);
+        this.physics.add.existing(this.upperWallCollider, true);
+        this.physics.add.collider(this.player, this.upperWallCollider);
 
         this.gameManager = new GameManager(this);
         this.inventory = new Inventory(this);
@@ -101,6 +106,9 @@ export default class WorldScene extends Phaser.Scene {
         this.students.forEach(student => {
             this.physics.add.collider(this.player, student);
         });
+
+        this.createImperialRegalia();
+        this.createOniGuardian();
 
         // Play breathing animations
         this.students[0].play('student-yellow-breath', true);
@@ -185,6 +193,8 @@ export default class WorldScene extends Phaser.Scene {
         const distToElias = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToRack = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.weaponRack.x, this.weaponRack.y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+        const distToOni = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.oniPosition.x, this.oniPosition.y);
+        const nearbyTreasure = this.nearestTreasure();
         const nearbyDrop = this.nearestDroppedWeapon();
         this.updateDisarmButton(distToRack);
 
@@ -198,6 +208,14 @@ export default class WorldScene extends Phaser.Scene {
                 : `E: recoger ${nearbyDrop.drop.weapon.name}`;
             promptX = nearbyDrop.drop.x;
             promptY = nearbyDrop.drop.y - 26;
+        } else if (distToOni < 75 && !this.dialogSystem.visible) {
+            activePrompt = 'E: hablar con el Oni';
+            promptX = this.oniPosition.x;
+            promptY = this.oniPosition.y - 82;
+        } else if (nearbyTreasure && !this.dialogSystem.visible) {
+            activePrompt = `E: examinar ${nearbyTreasure.name}`;
+            promptX = nearbyTreasure.x;
+            promptY = 116;
         } else if (distToElias < 50 && !this.dialogSystem.visible) {
             activePrompt = "Pulsa E para hablar con Miyagi";
             promptX = this.npcs[0].x;
@@ -294,10 +312,16 @@ export default class WorldScene extends Phaser.Scene {
         const distToElias = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
         const distToRack = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.weaponRack.x, this.weaponRack.y);
         const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+        const distToOni = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.oniPosition.x, this.oniPosition.y);
+        const nearbyTreasure = this.nearestTreasure();
         const nearbyDrop = this.nearestDroppedWeapon();
 
         if (action !== 'exit' && nearbyDrop && nearbyDrop.distance < 27) {
             this.pickUpWeapon(nearbyDrop.drop);
+        } else if (action !== 'exit' && distToOni < 75) {
+            this.showFloatingBubble(this.oniPosition.x, this.oniPosition.y - 25, 'Custodio los tres tesoros.');
+        } else if (action !== 'exit' && nearbyTreasure) {
+            this.showFloatingBubble(nearbyTreasure.x, 130, nearbyTreasure.description);
         } else if (action !== 'exit' && distToElias < 50) {
             this.dialogSystem.showDialog(this.npcs[0]);
             this.eliasState = 'talked';
@@ -326,6 +350,41 @@ export default class WorldScene extends Phaser.Scene {
         const lights = [64, 582].map(x => this.add.circle(x, 49, 15, 0xffd47a, 0.09).setDepth(2));
         this.tweens.add({ targets: lights, alpha: 0.17, scale: 1.12, duration: 1300, yoyo: true, repeat: -1 });
         plaque.setAlpha(0.96);
+    }
+
+    createImperialRegalia() {
+        // Representations in the wall cases, not collectable originals.
+        this.treasures = [
+            { x: 135, y: 78, name: 'el espejo', description: 'Espejo: Yata no Kagami' },
+            { x: 440, y: 78, name: 'la espada', description: 'Espada: Kusanagi no Tsurugi' },
+            { x: 505, y: 78, name: 'la joya', description: 'Joya: Yasakani no Magatama' }
+        ];
+    }
+
+    nearestTreasure() {
+        return this.treasures
+            .map(treasure => ({ ...treasure, distance: Phaser.Math.Distance.Between(
+                this.player.x, this.player.y, treasure.x, treasure.y
+            ) }))
+            .filter(treasure => treasure.distance < 82)
+            .sort((a, b) => a.distance - b.distance)[0];
+    }
+
+    createOniGuardian() {
+        this.oniPosition = { x: 554, y: 508 };
+        const aura = this.add.ellipse(554, 502, 62, 17, 0x44cbff, 0.24).setDepth(495);
+        this.oni = this.add.image(554, 508, 'oni_guardian')
+            .setOrigin(0.5, 1).setDisplaySize(70, 96).setDepth(508)
+            .setInteractive({ useHandCursor: true });
+        this.oni.on('pointerdown', () => {
+            if (Phaser.Math.Distance.Between(this.player.x, this.player.y, this.oniPosition.x, this.oniPosition.y) < 75) {
+                this.showFloatingBubble(554, 483, 'Custodio los tres tesoros.');
+            }
+        });
+        const feet = this.add.rectangle(554, 498, 38, 20, 0, 0);
+        this.physics.add.existing(feet, true);
+        this.physics.add.collider(this.player, feet);
+        this.tweens.add({ targets: aura, alpha: 0.45, scaleX: 1.1, duration: 1800, yoyo: true, repeat: -1 });
     }
 
     createDisarmButton() {

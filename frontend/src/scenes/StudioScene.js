@@ -61,12 +61,9 @@ export default class StudioScene extends Phaser.Scene {
             this.physics.add.collider(this.player, npc);
         });
 
-        // The two exits frame the window on the studio's upper wall.
+        // The two exits are painted into the upper wall of the room.
         this.createAcademyDoor();
-        this.toriiGate = this.add.rectangle(95, 86, 58, 48, 0, 0);
-        this.physics.add.existing(this.toriiGate, true);
-        this.physics.add.collider(this.player, this.toriiGate);
-        this.toriiOpened = false;
+        this.academyOpened = false;
 
         // Interaction Prompt (Dynamic Width)
         this.promptBox = this.add.rectangle(320, 280, 160, 20, 0x111827, 0.9)
@@ -186,13 +183,11 @@ export default class StudioScene extends Phaser.Scene {
     }
 
     createMachineRoomDoor() {
-        this.machineDoorPosition = { x: 545, y: 86 };
-        this.add.image(545, 86, 'machine_door').setDisplaySize(82, 82).setDepth(4);
+        this.machineDoorPosition = { x: 522, y: 94 };
     }
 
     createAcademyDoor() {
-        this.academyDoor = this.add.image(95, 86, 'academy_door')
-            .setDisplaySize(110, 73).setDepth(5);
+        this.academyDoorPosition = { x: 110, y: 94 };
     }
 
     update() {
@@ -210,11 +205,10 @@ export default class StudioScene extends Phaser.Scene {
         // Y-sorting for depth
         this.player.setDepth(this.player.y);
         this.npcs.forEach(npc => npc.setDepth(npc.y));
-        this.toriiGate.setDepth(this.toriiGate.y);
 
         // Check distance to spots
         const distToTecnico = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
-        const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+        const distToAcademyDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.academyDoorPosition.x, this.academyDoorPosition.y);
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.computerPosition.x, this.computerPosition.y);
         const distToPiano = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pianoPosition.x, this.pianoPosition.y);
         const distToDrums = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.drumPosition.x, this.drumPosition.y);
@@ -244,7 +238,7 @@ export default class StudioScene extends Phaser.Scene {
             activePrompt = "Pulsa L para usar Auriculares / Spotify";
             promptX = 385;
             promptY = 230;
-        } else if (distToTorii < 110 && !this.dialogSystem.visible && !this.toriiOpened) {
+        } else if (distToAcademyDoor < 110 && !this.dialogSystem.visible && !this.academyOpened) {
             activePrompt = "Pulsa Q para entrar a la Academia";
             promptX = 175;
             promptY = 145;
@@ -296,7 +290,7 @@ export default class StudioScene extends Phaser.Scene {
         const distToPiano = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pianoPosition.x, this.pianoPosition.y);
         const distToDrums = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.drumPosition.x, this.drumPosition.y);
         const distToTecnico = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcs[0].x, this.npcs[0].y);
-        const distToTorii = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.toriiGate.x, this.toriiGate.y);
+        const distToAcademyDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.academyDoorPosition.x, this.academyDoorPosition.y);
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.computerPosition.x, this.computerPosition.y);
         const distToMachineDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.machineDoorPosition.x, this.machineDoorPosition.y);
 
@@ -322,10 +316,8 @@ export default class StudioScene extends Phaser.Scene {
             this.dialogSystem.showDialog(this.npcs[0]);
         } else if ((action === 'computer' || action === 'auto') && distToComputer < 50) {
             this.toggleSpotify();
-        } else if ((action === 'exit' || action === 'auto') && distToTorii < 110 && !this.toriiOpened) {
-            this.toriiOpened = true;
-            this.tweens.add({ targets: this.academyDoor, alpha: 0, duration: 450 });
-            this.physics.world.disableBody(this.toriiGate.body); // disable collision so player can walk through!
+        } else if ((action === 'exit' || action === 'auto') && distToAcademyDoor < 110 && !this.academyOpened) {
+            this.academyOpened = true;
             
             // Hide real Spotify player on exit!
             const spotifyDiv = document.getElementById('spotify-player');
