@@ -35,10 +35,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Compile backend
+        run: mvn -q -f backend/pom.xml test
+
       - name: Test combat and weapon grip rules
-        run: node --test frontend/src/combat/rules.test.mjs frontend/src/art/weapons.test.mjs frontend/src/ui/faq.test.mjs
+        run: node --test frontend/src/combat/rules.test.mjs frontend/src/art/weapons.test.mjs
 
       - name: Build
+        env:
+          VITE_ASSISTANT_API_URL: ${{ vars.ASSISTANT_API_URL }}
         run: npm run build
 
       - name: Check published character names and assets

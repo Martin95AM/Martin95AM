@@ -1,10 +1,11 @@
-import { createAnswerer } from './faq.mjs';
 import './assistant.css';
 
 export default class AssistantPanel {
     constructor() {
         this.opened = false;
-        this.answer = createAnswerer();
+        this.sessionId = null;
+        this.apiUrl = import.meta.env.VITE_ASSISTANT_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : null);
+        this.pending = false;
         this.recognition = null;
         this.voice = null;
         this.synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
@@ -36,6 +37,7 @@ export default class AssistantPanel {
         document.body.appendChild(this.root);
         this.log = this.root.querySelector('.assistant-log');
         this.form = this.root.querySelector('.assistant-form');
+        this.submitButton = this.form.querySelector('button[type="submit"]');
         this.input = this.root.querySelector('#assistant-question');
         this.mic = this.root.querySelector('.assistant-mic');
         this.status = this.root.querySelector('.assistant-status');
@@ -128,16 +130,40 @@ export default class AssistantPanel {
         this.log.scrollTop = this.log.scrollHeight;
     }
 
-    ask() {
+    async ask() {
         const question = this.input.value.trim();
-        if (!question) return;
+        if (!question || this.pending) return;
         this.append('Vos', question);
         this.input.value = '';
-        const reply = this.answer(question);
-        this.append('Asistente', reply);
-        this.status.textContent = 'Lista para otra pregunta.';
-        this.speak(reply);
-        this.input.focus();
+        if (!this.apiUrl) {
+            this.status.textContent = 'El chat todavía no está conectado al servidor.';
+            return;
+        }
+        this.pending = true;
+        this.submitButton.disabled = true;
+        this.status.textContent = 'Pensando…';
+        try {
+            const response = await fetch(`${this.apiUrl.replace(/\/$/, '')}/api/assistant/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: question, sessionId: this.sessionId }),
+                signal: AbortSignal.timeout(25000)
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'No pude responder ahora. Probá otra vez.');
+            this.sessionId = data.sessionId;
+            this.append('Asistente', data.reply);
+            this.status.textContent = 'Lista para otra pregunta.';
+            this.speak(data.reply);
+        } catch (error) {
+            this.status.textContent = error.name === 'TimeoutError'
+                ? 'La respuesta tardó demasiado. Probá otra vez.'
+                : error.message === 'Failed to fetch' ? 'No pude conectar con el servidor. Probá más tarde.' : error.message;
+        } finally {
+            this.pending = false;
+            this.submitButton.disabled = false;
+            this.input.focus();
+        }
     }
 
     speak(reply) {
