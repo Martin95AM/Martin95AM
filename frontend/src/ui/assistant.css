@@ -22,8 +22,8 @@
 .assistant-compose .assistant-mic { color: #e2faff; background: #19435b; }
 .assistant-compose .assistant-mic.listening { color: #071e2a; background: #e9b478; }
 .assistant-compose button:disabled { opacity: .55; cursor: not-allowed; }
-.assistant-footer { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-.assistant-stop { flex: none; padding: 5px 8px; border: 1px solid #568da6; border-radius: 6px; color: #d4f3fb; background: #123248; font-family: inherit; font-size: 12px; cursor: pointer; }
+.assistant-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+.assistant-stop, .assistant-new { flex: none; padding: 5px 8px; border: 1px solid #568da6; border-radius: 6px; color: #d4f3fb; background: #123248; font-family: inherit; font-size: 12px; cursor: pointer; }
 .assistant-status { min-height: 17px; margin: 0; color: #9cc4d1; font-size: 12px; }
 .assistant-privacy { margin: 11px 0 0; color: #95b6c2; font-size: 11px; line-height: 1.4; }
 @media (max-width: 520px) { .assistant-panel { padding: 15px; }.assistant-message { max-width: 95%; }.assistant-compose { flex-direction: column; } }

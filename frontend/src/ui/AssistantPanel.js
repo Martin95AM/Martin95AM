@@ -29,6 +29,7 @@ export default class AssistantPanel {
                     </div>
                 </form>
                 <div class="assistant-footer">
+                    <button class="assistant-new" type="button">Nueva charla</button>
                     <button class="assistant-stop" type="button">Detener voz</button>
                     <p class="assistant-status" role="status"></p>
                 </div>
@@ -42,6 +43,7 @@ export default class AssistantPanel {
         this.mic = this.root.querySelector('.assistant-mic');
         this.status = this.root.querySelector('.assistant-status');
         this.root.querySelector('.assistant-close').addEventListener('click', () => this.close());
+        this.root.querySelector('.assistant-new').addEventListener('click', () => this.newConversation());
         this.root.querySelector('.assistant-stop').addEventListener('click', () => this.stopVoice());
         this.root.addEventListener('pointerdown', event => {
             if (event.target === this.root) this.close();
@@ -149,8 +151,11 @@ export default class AssistantPanel {
                 body: JSON.stringify({ message: question, sessionId: this.sessionId }),
                 signal: AbortSignal.timeout(25000)
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.message || 'No pude responder ahora. Probá otra vez.');
+            if (typeof data.reply !== 'string' || !data.reply.trim() || typeof data.sessionId !== 'string') {
+                throw new Error('El servidor devolvió una respuesta incompleta. Probá otra vez.');
+            }
             this.sessionId = data.sessionId;
             this.append('Asistente', data.reply);
             this.status.textContent = 'Lista para otra pregunta.';
@@ -187,6 +192,16 @@ export default class AssistantPanel {
 
     stopVoice() {
         this.synth?.cancel();
+    }
+
+    newConversation() {
+        if (this.pending) return;
+        this.stopVoice();
+        this.sessionId = null;
+        this.log.replaceChildren();
+        this.append('Asistente', 'Hola de nuevo. ¿De qué te gustaría charlar?');
+        this.status.textContent = 'Nueva charla iniciada.';
+        this.input.focus();
     }
 
     open() {
