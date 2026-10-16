@@ -31,6 +31,12 @@ export function answerQuestion(question, facts = PUBLIC_FACTS, repetition = 0) {
     if (!withoutGreeting || /^(?:todo bien|como estas|como andas|que tal|como va)$/.test(normalized)) {
         return alternate ? '¡Hola de nuevo! Todo bien por acá. ¿Qué te gustaría charlar sobre Martín?' : '¡Hola! Bien, por suerte. ¿Vos cómo andás? Si querés saber algo de Martín, preguntame tranquilo.';
     }
+    if (/^(?:(?:bien(?: bien)?|todo bien|muy bien|re bien) )?(?:(?:aqui|aca) )?(?:(?:estoy|ando) )?estudiando(?: .*)?$/.test(normalized)) {
+        return alternate ? '¡Qué bien! ¿Y qué materia estás viendo?' : '¡Qué bueno! ¿Qué estás estudiando?';
+    }
+    if (/^(?:bien(?: bien)?|todo bien|muy bien|re bien)(?: gracias)?$/.test(normalized)) {
+        return alternate ? 'Qué bueno saberlo. ¿En qué andás hoy?' : '¡Me alegra! ¿Qué estás haciendo hoy?';
+    }
     if (/^(?:hablame|contame|decime) de eso$/.test(withoutGreeting)) {
         const summary = facts.find(fact => fact.triggers.includes('resumen de martin'));
         return summary ? (alternate ? summary.alternative || `Te lo cuento de otra manera: ${summary.answer}` : summary.answer)

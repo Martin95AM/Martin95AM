@@ -41,6 +41,15 @@ test('handles greetings and common HR questions naturally', () => {
     assert.match(answerQuestion('¿Qué puede aportar en un trabajo?'), /informática, audio/);
 });
 
+test('continues casual conversation after asking how the visitor is', () => {
+    const answer = createAnswerer();
+    assert.match(answer('hola como andas?'), /¿Vos cómo andás/);
+    assert.equal(answer('bien bien aqui estudiando'), '¡Qué bueno! ¿Qué estás estudiando?');
+    assert.match(answer('bien, gracias'), /Me alegra/);
+    assert.match(answer('estoy estudiando'), /Qué estás estudiando/);
+    assert.match(answer('¿Qué estudia Martín?'), /Inteligencia Artificial y Robótica/);
+});
+
 test('repeated questions get a different safe answer in the same conversation', () => {
     for (const question of ['hola como andas?', '¿En qué trabajó Martín?', '¿Qué idiomas habla?', '¿Cuál es su DNI?', '¿Cuánto mide?']) {
         const answer = createAnswerer();
