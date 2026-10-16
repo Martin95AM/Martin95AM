@@ -1,0 +1,33 @@
+.patch-overlay[hidden] { display: none; }
+.patch-overlay { position: fixed; inset: 0; z-index: 20000; display: grid; place-items: center; padding: 18px; box-sizing: border-box; background: #101b23c9; backdrop-filter: blur(6px); }
+.patch-panel { width: min(760px, 100%); max-height: 95vh; overflow: auto; box-sizing: border-box; padding: 23px; border: 2px solid #ad7443; border-radius: 15px; color: #f8ecd8; background: linear-gradient(145deg, #34413e, #182b35 58%, #101d2b); box-shadow: 0 25px 80px #07121c, inset 0 1px #ffffff33; font-family: 'Trebuchet MS', sans-serif; }
+.patch-header, .patch-meter, .patch-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.patch-kicker, .patch-footer { color: #b9d5c4; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.patch-header h2 { margin: 4px 0 0; color: #ffe0a9; font-size: clamp(25px, 4vw, 36px); }
+.patch-close { width: 38px; height: 38px; flex: none; border: 1px solid #d4ad78; border-radius: 8px; background: #334849; color: #fff; cursor: pointer; font-size: 28px; line-height: 30px; }
+.patch-help { margin: 13px 0 17px; color: #d7e1d8; font-size: 14px; line-height: 1.45; }
+.patch-meter { margin-bottom: 10px; font-size: 13px; }
+.patch-status { color: #aaf1d2; }
+.patch-moves { flex: none; color: #f4c995; font-variant-numeric: tabular-nums; }
+.patch-board { --side-width: clamp(88px, 22%, 138px); position: relative; min-height: 292px; padding: 14px 8px; box-sizing: border-box; border: 5px solid #674735; border-radius: 12px; background: repeating-linear-gradient(0deg, #243b42 0 65px, #182b33 65px 66px); box-shadow: inset 0 7px 20px #050e15, 0 6px #1b211e; }
+.patch-board::after { content: ''; position: absolute; inset: 8px; border: 1px solid #ffffff18; border-radius: 5px; pointer-events: none; }
+.patch-rows { position: relative; z-index: 2; }
+.patch-row { display: grid; grid-template-columns: var(--side-width) minmax(0, 1fr) var(--side-width); height: 66px; align-items: center; }
+.patch-source, .patch-output { min-width: 0; display: flex; align-items: center; gap: 7px; font: 700 12px 'Trebuchet MS', sans-serif; }
+.patch-source { justify-content: flex-end; color: #f2e4ce; }
+.patch-output { justify-content: flex-start; width: 100%; min-height: 45px; padding: 2px 5px; border: 1px solid transparent; border-radius: 8px; color: #f2e4ce; background: transparent; cursor: pointer; }
+.patch-output:hover, .patch-output.selected { border-color: #f9d78d; background: #ffffff18; }
+.patch-output.correct .patch-label { color: #9de9ac; }
+.patch-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.patch-jack, .patch-plug { width: 25px; height: 25px; flex: none; border: 5px ridge #9ba5a3; border-radius: 50%; box-sizing: border-box; background: radial-gradient(circle, var(--signal) 0 38%, #101820 40% 75%, #a7b7b1 77%); box-shadow: 0 2px 5px #060d11; }
+.patch-plug { width: 29px; height: 29px; border-radius: 8px 50% 50% 8px; background: radial-gradient(circle at 60% 50%, var(--signal) 0 33%, #14212b 38% 70%, #879894 73%); }
+.patch-cables { position: absolute; z-index: 1; top: 14px; bottom: 14px; left: calc(var(--side-width) + 8px); width: calc(100% - 2 * var(--side-width) - 16px); height: 264px; overflow: visible; pointer-events: none; }
+.patch-cable-shadow, .patch-cable { fill: none; stroke-linecap: round; }
+.patch-cable-shadow { stroke-width: 12; opacity: .85; }
+.patch-cable { stroke-width: 7; filter: drop-shadow(0 3px 2px #050e18); }
+.patch-board.solved { border-color: #74be88; box-shadow: inset 0 7px 20px #050e15, 0 0 22px #77db9380; }
+.patch-footer { margin-top: 17px; }
+.patch-reset { min-height: 38px; padding: 7px 13px; border: 1px solid #e5bb7a; border-radius: 7px; color: #fff0d4; background: #415753; font: 700 13px 'Trebuchet MS', sans-serif; cursor: pointer; }
+.patch-reset:hover { background: #627666; }
+.patch-close:focus-visible, .patch-output:focus-visible, .patch-reset:focus-visible { outline: 3px solid #ffe09c; outline-offset: 2px; }
+@media (max-width: 540px) { .patch-panel { padding: 15px; } .patch-board { --side-width: 88px; } .patch-source, .patch-output { gap: 4px; font-size: 10px; } .patch-jack { width: 20px; height: 20px; border-width: 4px; } .patch-plug { width: 23px; height: 23px; border-width: 4px; } .patch-meter { align-items: flex-start; } }

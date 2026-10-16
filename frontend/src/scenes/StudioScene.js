@@ -5,6 +5,7 @@ import NPC from "../npc/NPC.js";
 import DialogSystem from "../npc/DialogSystem.js";
 import PianoPanel from "../ui/PianoPanel.js";
 import DrumPanel from "../ui/DrumPanel.js";
+import PatchBayPanel from "../ui/PatchBayPanel.js";
 import SaveManager from '../managers/SaveManager.js';
 
 export default class StudioScene extends Phaser.Scene {
@@ -35,6 +36,7 @@ export default class StudioScene extends Phaser.Scene {
         this.dialogSystem = new DialogSystem(this);
         this.pianoPanel = new PianoPanel();
         this.drumPanel = new DrumPanel();
+        this.patchBayPanel = new PatchBayPanel();
         this.events.on('shutdown', () => this.saveGame());
         this.time.addEvent({ delay: 5000, loop: true, callback: () => this.saveGame() });
         this.createPianoCorner();
@@ -108,6 +110,7 @@ export default class StudioScene extends Phaser.Scene {
         this.lKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L);
         this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
         this.bKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+        this.cKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
         this.mKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
         this.exiting = false;
         this.hasHeadphones = false;
@@ -131,6 +134,7 @@ export default class StudioScene extends Phaser.Scene {
             window.removeEventListener('close-headphones', this.boundCloseHeadphones);
             this.pianoPanel.destroy();
             this.drumPanel.destroy();
+            this.patchBayPanel.destroy();
         });
         this.saveGame();
     }
@@ -180,6 +184,9 @@ export default class StudioScene extends Phaser.Scene {
         }
         // Approach the PC from the open floor to the right of the chair.
         this.computerPosition = { x: 385, y: 257 };
+        // The cable-filled patch bay is painted at the right end of the mixer.
+        // Approach it from the open floor beside the console.
+        this.patchBayPosition = { x: 445, y: 245 };
     }
 
     createMachineRoomDoor() {
@@ -192,9 +199,9 @@ export default class StudioScene extends Phaser.Scene {
 
     update() {
         this.npcs.forEach(npc => npc.update({
-            paused: this.exiting || this.pianoPanel.opened || this.drumPanel.opened || this.dialogSystem.visible
+            paused: this.exiting || this.pianoPanel.opened || this.drumPanel.opened || this.patchBayPanel.opened || this.dialogSystem.visible
         }));
-        if (this.exiting || this.pianoPanel.opened || this.drumPanel.opened) {
+        if (this.exiting || this.pianoPanel.opened || this.drumPanel.opened || this.patchBayPanel.opened) {
             this.player.setVelocity(0, 0);
             return;
         }
@@ -213,6 +220,7 @@ export default class StudioScene extends Phaser.Scene {
         const distToPiano = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pianoPosition.x, this.pianoPosition.y);
         const distToDrums = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.drumPosition.x, this.drumPosition.y);
         const distToMachineDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.machineDoorPosition.x, this.machineDoorPosition.y);
+        const distToPatchBay = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.patchBayPosition.x, this.patchBayPosition.y);
 
         let activePrompt = null;
         let promptX = 0;
@@ -222,6 +230,10 @@ export default class StudioScene extends Phaser.Scene {
             activePrompt = 'Pulsa M para entrar al cuarto de máquinas';
             promptX = 455;
             promptY = 145;
+        } else if (distToPatchBay < 60 && !this.dialogSystem.visible) {
+            activePrompt = 'Pulsa C para desenredar la patch bay';
+            promptX = 465;
+            promptY = 203;
         } else if (distToPiano < 90 && !this.dialogSystem.visible) {
             activePrompt = "Pulsa P para tocar el piano";
             promptX = this.pianoPosition.x;
@@ -281,6 +293,9 @@ export default class StudioScene extends Phaser.Scene {
         if (Phaser.Input.Keyboard.JustDown(this.bKey) && distToDrums < 82 && !this.dialogSystem.visible) {
             this.handleInteraction('drums');
         }
+        if (Phaser.Input.Keyboard.JustDown(this.cKey) && distToPatchBay < 60 && !this.dialogSystem.visible) {
+            this.handleInteraction('patch-bay');
+        }
         if (Phaser.Input.Keyboard.JustDown(this.mKey) && distToMachineDoor < 110 && !this.dialogSystem.visible) {
             this.handleInteraction('machine-room');
         }
@@ -293,6 +308,7 @@ export default class StudioScene extends Phaser.Scene {
         const distToAcademyDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.academyDoorPosition.x, this.academyDoorPosition.y);
         const distToComputer = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.computerPosition.x, this.computerPosition.y);
         const distToMachineDoor = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.machineDoorPosition.x, this.machineDoorPosition.y);
+        const distToPatchBay = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.patchBayPosition.x, this.patchBayPosition.y);
 
         if ((action === 'machine-room' || action === 'auto') && distToMachineDoor < 110 && !this.dialogSystem.visible) {
             this.exiting = true;
@@ -302,6 +318,11 @@ export default class StudioScene extends Phaser.Scene {
             if (spotifyDiv) spotifyDiv.style.display = 'none';
             this.cameras.main.fadeOut(500, 0, 0, 0);
             this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('MachineRoomScene'));
+        } else if ((action === 'patch-bay' || action === 'auto') && distToPatchBay < 60 && !this.dialogSystem.visible) {
+            this.inputManager.targetPosition = null;
+            this.patchBayPanel.open();
+            this.promptBox.setVisible(false);
+            this.promptText.setVisible(false);
         } else if ((action === 'piano' || action === 'auto') && distToPiano < 90 && !this.dialogSystem.visible) {
             this.inputManager.targetPosition = null;
             this.pianoPanel.open();
