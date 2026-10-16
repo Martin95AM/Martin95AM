@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import Player from '../entities/Player.js';
 import InputManager from '../managers/InputManager.js';
 import SaveManager from '../managers/SaveManager.js';
+import AssistantPanel from '../ui/AssistantPanel.js';
 
 export default class MachineRoomScene extends Phaser.Scene {
     constructor() { super('MachineRoomScene'); }
@@ -16,6 +17,7 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.cameras.main.setZoom(2);
         this.cameras.main.setBackgroundColor('#061323');
         this.inputManager = new InputManager(this);
+        this.assistantPanel = new AssistantPanel();
 
         // The workstation is painted into the room art. Its collider leaves a
         // clear approach from the entrance while preventing walking over it.
@@ -34,7 +36,10 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.prompt.on('pointerdown', () => this.interact());
         this.exiting = false;
         this.saveGame();
-        this.events.on('shutdown', () => this.saveGame());
+        this.events.on('shutdown', () => {
+            this.saveGame();
+            this.assistantPanel.destroy();
+        });
         this.time.addEvent({ delay: 5000, loop: true, callback: () => this.saveGame() });
     }
 
@@ -46,6 +51,11 @@ export default class MachineRoomScene extends Phaser.Scene {
     update(time) {
         this.animateScreen(time);
         if (this.exiting) return;
+        if (this.assistantPanel.opened) {
+            this.player.setVelocity(0, 0);
+            this.prompt.setVisible(false);
+            return;
+        }
         this.player.update(this.inputManager.getInputState());
         this.player.setDepth(this.player.y);
         const nearExit = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 565) < 67;
@@ -54,17 +64,18 @@ export default class MachineRoomScene extends Phaser.Scene {
         if (nearExit) this.prompt.setText('E · Volver al estudio').setPosition(320, 490);
         else if (nearPc) this.prompt.setText('P · Examinar PC central').setPosition(320, 355);
         if (nearExit && Phaser.Input.Keyboard.JustDown(this.returnKey)) this.returnToStudio();
-        if (nearPc && Phaser.Input.Keyboard.JustDown(this.pcKey)) this.showPcMessage();
+        if (nearPc && Phaser.Input.Keyboard.JustDown(this.pcKey)) this.openAssistant();
     }
 
     interact() {
         if (this.exiting) return;
         if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 565) < 67) this.returnToStudio();
-        else if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 395) < 92) this.showPcMessage();
+        else if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 395) < 92) this.openAssistant();
     }
 
-    showPcMessage() {
-        this.prompt.setText('Terminal lista · asistente próximamente').setPosition(320, 355).setVisible(true);
+    openAssistant() {
+        this.player.setVelocity(0, 0);
+        this.assistantPanel.open();
     }
 
     returnToStudio() {
