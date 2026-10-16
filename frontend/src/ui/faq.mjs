@@ -50,5 +50,5 @@ export function answerQuestion(question, facts = PUBLIC_FACTS, repetition = 0) {
     }
     const match = facts.find(fact => fact.triggers.some(trigger => withoutGreeting.includes(normalizeQuestion(trigger))));
     if (match) return alternate ? match.alternative || `Te lo cuento de otra manera: ${match.answer}` : match.answer;
-    return alternate ? 'No tengo una respuesta confirmada para eso. ¿Querés preguntarme por el trabajo o los estudios de Martín?' : 'Mmm, de eso no tengo un dato confirmado. Pero si querés te cuento sobre la experiencia, formación, habilidades o idiomas de Martín.';
+    return alternate ? 'No tengo una respuesta confirmada para eso. ¿Querés preguntarme por el trabajo o los estudios de Martín?' : 'Por ahora no tengo un dato confirmado sobre eso. Si querés, te cuento sobre la experiencia, formación, habilidades o idiomas de Martín.';
 }

@@ -15,6 +15,7 @@ test('answers only from approved facts', () => {
 
 test('does not invent personal information when the profile is empty', () => {
     assert.match(answerQuestion('¿Dónde vive Martín?', []), /no tengo un dato confirmado/);
+    assert.doesNotMatch(answerQuestion('¿Dónde vive Martín?', []), /mmm/i);
 });
 
 test('never answers requests for explicitly excluded personal data', () => {
