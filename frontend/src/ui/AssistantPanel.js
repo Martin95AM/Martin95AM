@@ -1,9 +1,10 @@
-import { answerQuestion } from './faq.mjs';
+import { createAnswerer } from './faq.mjs';
 import './assistant.css';
 
 export default class AssistantPanel {
     constructor() {
         this.opened = false;
+        this.answer = createAnswerer();
         this.recognition = null;
         this.voice = null;
         this.synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
@@ -132,7 +133,7 @@ export default class AssistantPanel {
         if (!question) return;
         this.append('Vos', question);
         this.input.value = '';
-        const reply = answerQuestion(question);
+        const reply = this.answer(question);
         this.append('Asistente', reply);
         this.status.textContent = 'Lista para otra pregunta.';
         this.speak(reply);

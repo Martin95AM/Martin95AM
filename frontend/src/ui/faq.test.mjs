@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { answerQuestion, normalizeQuestion } from './faq.mjs';
+import { answerQuestion, createAnswerer, normalizeQuestion } from './faq.mjs';
 import { PUBLIC_FACTS } from './publicFacts.mjs';
 
 test('normalizes Spanish questions for matching', () => {
@@ -41,9 +41,26 @@ test('handles greetings and common HR questions naturally', () => {
     assert.match(answerQuestion('¿Qué puede aportar en un trabajo?'), /informática, audio/);
 });
 
+test('repeated questions get a different safe answer in the same conversation', () => {
+    for (const question of ['hola como andas?', '¿En qué trabajó Martín?', '¿Qué idiomas habla?', '¿Cuál es su DNI?', '¿Cuánto mide?']) {
+        const answer = createAnswerer();
+        const first = answer(question);
+        const second = answer(question.toUpperCase());
+        assert.notEqual(second, first, `Repeated answer for ${question}`);
+        assert.equal(answer(question), first, `Third answer should rotate for ${question}`);
+    }
+    const answer = createAnswerer();
+    assert.match(answer('¿Cuál es su DNI?'), /privado/);
+    assert.match(answer('¿Cuál es su DNI?'), /privacidad/);
+});
+
 test('keeps all published answers concise and omits excluded data', () => {
     for (const fact of PUBLIC_FACTS) {
-        assert.ok(fact.answer.split(/\s+/).length <= 110, `Too long: ${fact.triggers[0]}`);
-        assert.doesNotMatch(fact.answer, /\b(?:DNI|CUIT|CUIL|segundo nombre)\b/i);
+        for (const reply of [fact.answer, fact.alternative]) {
+            assert.ok(reply, `Missing answer variant: ${fact.triggers[0]}`);
+            assert.ok(reply.split(/\s+/).length <= 110, `Too long: ${fact.triggers[0]}`);
+            assert.doesNotMatch(reply, /\b(?:DNI|CUIT|CUIL|segundo nombre)\b/i);
+        }
+        assert.notEqual(fact.answer, fact.alternative);
     }
 });

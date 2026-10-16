@@ -9,27 +9,40 @@ export function normalizeQuestion(value) {
         .trim();
 }
 
-export function answerQuestion(question, facts = PUBLIC_FACTS) {
+export function createAnswerer(facts = PUBLIC_FACTS) {
+    const repetitions = new Map();
+    return question => {
+        const key = normalizeQuestion(question);
+        const count = repetitions.get(key) || 0;
+        repetitions.set(key, count + 1);
+        return answerQuestion(question, facts, count);
+    };
+}
+
+export function answerQuestion(question, facts = PUBLIC_FACTS, repetition = 0) {
     const normalized = normalizeQuestion(question);
+    const alternate = repetition % 2 === 1;
     if (!normalized) return 'Decime, ¿qué querés saber?';
     if (/\b(dni|documento de identidad|numero de documento|segundo nombre|segundo apellido|cuit|cuil|domicilio|direccion|calle|telefono|celular|whatsapp|correo|email|mail)\b/.test(normalized)) {
-        return 'Ese dato es privado y no lo comparto.';
+        return alternate ? 'Prefiero cuidar su privacidad; ese dato no lo puedo compartir.' : 'Ese dato es privado y no lo comparto.';
     }
     const withoutGreeting = normalized.replace(/^(?:hola|buenas(?: tardes| noches)?|buen dia)\b\s*/, '')
         .replace(/^(?:todo bien|como estas|como andas|que tal|como va)\b\s*/, '');
     if (!withoutGreeting || /^(?:todo bien|como estas|como andas|que tal|como va)$/.test(normalized)) {
-        return '¡Hola! Bien, por suerte. ¿Vos cómo andás? Si querés saber algo de Martín, preguntame tranquilo.';
+        return alternate ? '¡Hola de nuevo! Todo bien por acá. ¿Qué te gustaría charlar sobre Martín?' : '¡Hola! Bien, por suerte. ¿Vos cómo andás? Si querés saber algo de Martín, preguntame tranquilo.';
     }
     if (/^(?:hablame|contame|decime) de eso$/.test(withoutGreeting)) {
         const summary = facts.find(fact => fact.triggers.includes('resumen de martin'));
-        return summary?.answer || 'Sí, de una. Puedo hablarte de la experiencia, formación, habilidades o idiomas de Martín. ¿Por dónde arrancamos?';
+        return summary ? (alternate ? summary.alternative || `Te lo cuento de otra manera: ${summary.answer}` : summary.answer)
+            : (alternate ? 'Dale. ¿Te interesa su trabajo, sus estudios o los idiomas que habla?' : 'Sí, de una. Puedo hablarte de la experiencia, formación, habilidades o idiomas de Martín. ¿Por dónde arrancamos?');
     }
     if (/(quien eres|quien sos|que eres|que sos)/.test(withoutGreeting)) {
-        return 'Soy la voz del cuarto de máquinas. Estoy por acá para responder lo que quieras saber sobre Martín.';
+        return alternate ? 'Podés pensar en mí como la voz de este espacio: charlamos sobre la trayectoria de Martín.' : 'Soy la voz del cuarto de máquinas. Estoy por acá para responder lo que quieras saber sobre Martín.';
     }
     if (/\b(?:hijo de puta|forra|forro|boluda|boludo)\b/.test(withoutGreeting)) {
-        return 'Todo bien. Si querés, bajamos un cambio y seguimos: puedo ayudarte con información sobre Martín.';
+        return alternate ? 'Está bien. Si algo te molestó, podemos seguir con calma. Preguntame sobre Martín cuando quieras.' : 'Todo bien. Si querés, bajamos un cambio y seguimos: puedo ayudarte con información sobre Martín.';
     }
     const match = facts.find(fact => fact.triggers.some(trigger => withoutGreeting.includes(normalizeQuestion(trigger))));
-    return match?.answer || 'Mmm, de eso no tengo un dato confirmado. Pero si querés te cuento sobre la experiencia, formación, habilidades o idiomas de Martín.';
+    if (match) return alternate ? match.alternative || `Te lo cuento de otra manera: ${match.answer}` : match.answer;
+    return alternate ? 'No tengo una respuesta confirmada para eso. ¿Querés preguntarme por el trabajo o los estudios de Martín?' : 'Mmm, de eso no tengo un dato confirmado. Pero si querés te cuento sobre la experiencia, formación, habilidades o idiomas de Martín.';
 }
