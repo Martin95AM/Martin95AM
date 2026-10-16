@@ -15,12 +15,17 @@ export function answerQuestion(question, facts = PUBLIC_FACTS) {
     if (/\b(dni|documento de identidad|numero de documento|segundo nombre|segundo apellido|cuit|cuil|domicilio|direccion|calle|telefono|celular|whatsapp|correo|email|mail)\b/.test(normalized)) {
         return 'Ese dato es privado y no lo comparto.';
     }
-    if (/^(hola|buenas|buen dia|buenas tardes|buenas noches)$/.test(normalized)) {
-        return '¡Hola! Podés preguntarme sobre Martín por escrito o con el micrófono.';
+    const withoutGreeting = normalized.replace(/^(?:hola|buenas(?: tardes| noches)?|buen dia)\b\s*/, '')
+        .replace(/^(?:todo bien|como estas|que tal)\b\s*/, '');
+    if (!withoutGreeting || /^(?:todo bien|como estas|que tal|como va)$/.test(normalized)) {
+        return '¡Hola! Todo bien, gracias. Puedo contarte sobre la experiencia, formación e idiomas de Martín. ¿Qué te gustaría saber?';
     }
-    if (/(quien eres|quien sos|que eres|que sos)/.test(normalized)) {
+    if (/(quien eres|quien sos|que eres|que sos)/.test(withoutGreeting)) {
         return 'Soy la voz del cuarto de máquinas. Respondo preguntas básicas con información pública aprobada sobre Martín.';
     }
-    const match = facts.find(fact => fact.triggers.some(trigger => normalized.includes(normalizeQuestion(trigger))));
-    return match?.answer || 'Todavía no tengo ese dato público aprobado sobre Martín. Prefiero decir que no lo sé antes que inventarlo.';
+    if (/\b(?:hijo de puta|forra|forro|boluda|boludo)\b/.test(withoutGreeting)) {
+        return 'Entiendo la frustración. Puedo contarte sobre la experiencia, formación, habilidades e idiomas de Martín.';
+    }
+    const match = facts.find(fact => fact.triggers.some(trigger => withoutGreeting.includes(normalizeQuestion(trigger))));
+    return match?.answer || 'Sobre eso no lo sé con los datos públicos aprobados. Puedo hablar de su experiencia, formación, habilidades e idiomas.';
 }

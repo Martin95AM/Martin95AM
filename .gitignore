@@ -5,6 +5,8 @@ node_modules/
 .DS_Store
 .vscode/
 .idea/
+.env.local
+.codex-key-setup/
 frontend/node_modules/
 frontend/dist/
 backend/target/

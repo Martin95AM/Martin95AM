@@ -2,6 +2,10 @@
 // No incluir segundo nombre/apellido, documentos, CUIT, domicilio, teléfono ni correo.
 export const PUBLIC_FACTS = [
     {
+        triggers: ['todos los datos', 'todo lo que sabes', 'resumen de martin', 'perfil de martin', 'curriculum', 'cv de martin', 'presentame a martin', 'hablame de martin', 'contame de martin'],
+        answer: 'Martín Arias combina tecnología y audio. Según su CV de 2026, cursaba la Licenciatura en Inteligencia Artificial y Robótica en la Universidad Siglo 21 y es Técnico en Grabación y Postproducción de Audio. Trabajó en informática y audio en Nipper Estudios (2021–2026), en sonido en El Emergente (2018–2019) y en grabación en Estudios del Parral (2017–2021); también realizó tareas administrativas. Se formó en Full Stack Java, Python 3, testing y análisis financiero. Habla inglés, italiano y alemán, sin nivel informado. Su GitHub público es Martin95AM.'
+    },
+    {
         triggers: ['quien es martin', 'quien es martin arias', 'nombre de martin', 'como se llama martin', 'cual es su nombre', 'su nombre'],
         answer: 'Su nombre público es Martín Arias. Su trayectoria combina formación en tecnología y audio.'
     },
@@ -14,8 +18,12 @@ export const PUBLIC_FACTS = [
         answer: 'Martín obtuvo el título de Técnico en Grabación y Postproducción de Audio en Tecson en 2020. Su CV registra trabajo técnico en estudios de grabación y sonido.'
     },
     {
-        triggers: ['experiencia laboral', 'donde trabajo', 'en que trabajo', 'en que trabaja', 'trabajos anteriores', 'profesion', 'ocupacion'],
+        triggers: ['experiencia laboral', 'donde trabajo', 'en que trabajo', 'en que trabaja', 'de que trabaja', 'a que se dedica', 'de que labura', 'que hace martin', 'trabajos anteriores', 'profesion', 'ocupacion'],
         answer: 'Su CV registra experiencia en informática y audio en Nipper Estudios entre 2021 y 2026, en sonido en El Emergente entre 2018 y 2019, y en grabación en Estudios del Parral entre 2017 y 2021. También realizó tareas administrativas.'
+    },
+    {
+        triggers: ['que puede aportar', 'por que contratar', 'perfil profesional', 'experiencia para rrhh'],
+        answer: 'Su perfil reúne experiencia en informática, audio, grabación y tareas administrativas. Además, cursaba Inteligencia Artificial y Robótica y se formó en programación y testing. El CV no informa resultados medibles ni un nivel de idiomas, así que conviene preguntarle directamente por esos detalles.'
     },
     {
         triggers: ['programacion', 'python', 'java', 'desarrollo web', 'testing', 'software'],
