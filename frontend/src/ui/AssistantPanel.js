@@ -4,7 +4,9 @@ export default class AssistantPanel {
     constructor() {
         this.opened = false;
         this.history = [];
-        this.apiUrl = import.meta.env.VITE_ASSISTANT_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : null);
+        this.apiUrl = import.meta.env.VITE_ASSISTANT_API_URL || (import.meta.env.DEV
+            ? 'http://localhost:8080'
+            : 'https://martin95am-assistant.martinarias95.workers.dev');
         this.pending = false;
         this.recognition = null;
         this.voice = null;
