@@ -16,11 +16,10 @@ export default class StudioScene extends Phaser.Scene {
     create(data = {}) {
         // The illustrated room is scaled to the existing 640x640 game world.
         this.add.image(0, 0, 'studio_cozy_drums').setOrigin(0, 0).setDisplaySize(640, 640);
-        this.createStudioAtmosphere();
 
         // Spawn Martin (the player) at (320, 320)
         const preview = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('preview') : null;
-        const start = data.player ?? (preview === 'studio' ? { x: 470, y: 395 } : preview === 'drums' ? { x: 215, y: 435 } : { x: 320, y: 320 });
+        const start = data.player ?? (preview === 'studio' ? { x: 470, y: 395 } : preview === 'drums' ? { x: 285, y: 470 } : { x: 320, y: 320 });
         this.player = new Player(this, start.x, start.y);
         this.player.setTexture('martin_casual', 0);
 
@@ -40,6 +39,7 @@ export default class StudioScene extends Phaser.Scene {
         this.time.addEvent({ delay: 5000, loop: true, callback: () => this.saveGame() });
         this.createPianoCorner();
         this.createDrumCorner();
+        this.createSofaCollider();
         this.createConsoleColliders();
         this.createMachineRoomDoor();
 
@@ -52,7 +52,7 @@ export default class StudioScene extends Phaser.Scene {
             ], '', [
                 { x: 320, y: 267, facing: 'up', sit: true, wait: 4200 },
                 { x: 500, y: 360, facing: 'right', wait: 2600 },
-                { x: 194, y: 434, facing: 'left', wait: 3000 },
+            { x: 285, y: 475, facing: 'left', wait: 3000 },
                 { x: 511, y: 458, facing: 'right', wait: 2800 }
             ]).setPatrolMode('shuffle')
         ];
@@ -143,31 +143,31 @@ export default class StudioScene extends Phaser.Scene {
         SaveManager.save({ scene: 'StudioScene', player: { x: Math.round(this.player.x), y: Math.round(this.player.y) } });
     }
 
-    createStudioAtmosphere() {
-        // Small animated recording indicator on the wood trim below the window.
-        this.add.rectangle(320, 103, 74, 15, 0x25382f)
-            .setStrokeStyle(1, 0xd0aa69).setDepth(2);
-        this.add.text(320, 103, 'SALA A · REC', {
-            fontSize: '8px', color: '#ffdb9e', fontFamily: 'monospace'
-        }).setOrigin(0.5).setDepth(3);
-        const liveLight = this.add.circle(362, 103, 2, 0xef675f).setDepth(3);
-        this.tweens.add({ targets: liveLight, alpha: 0.35, duration: 900, yoyo: true, repeat: -1 });
-    }
-
     createPianoCorner() {
         // Both instruments are painted into the room asset; only their physics
         // zones and interaction points need to be added to the scene.
-        this.pianoPosition = { x: 532, y: 366 };
-        this.pianoCollider = this.add.rectangle(550, 350, 62, 124, 0x000000, 0);
+        this.pianoPosition = { x: 525, y: 360 };
+        this.pianoCollider = this.add.rectangle(570, 360, 78, 145, 0x000000, 0);
         this.physics.add.existing(this.pianoCollider, true);
         this.physics.add.collider(this.player, this.pianoCollider);
     }
 
     createDrumCorner() {
-        this.drumPosition = { x: 173, y: 436 };
-        this.drumCollider = this.add.rectangle(134, 437, 73, 93, 0x000000, 0);
-        this.physics.add.existing(this.drumCollider, true);
-        this.physics.add.collider(this.player, this.drumCollider);
+        this.drumPosition = { x: 278, y: 470 };
+        this.drumColliders = [
+            this.add.rectangle(130, 452, 100, 90, 0x000000, 0),
+            this.add.rectangle(190, 534, 145, 140, 0x000000, 0)
+        ];
+        for (const obstacle of this.drumColliders) {
+            this.physics.add.existing(obstacle, true);
+            this.physics.add.collider(this.player, obstacle);
+        }
+    }
+
+    createSofaCollider() {
+        this.sofaCollider = this.add.rectangle(94, 344, 88, 134, 0x000000, 0);
+        this.physics.add.existing(this.sofaCollider, true);
+        this.physics.add.collider(this.player, this.sofaCollider);
     }
 
     createConsoleColliders() {
@@ -175,8 +175,8 @@ export default class StudioScene extends Phaser.Scene {
         // The painted console and monitor form one solid workstation; the
         // chair extends into the room and needs its own collision shape.
         this.upperWallCollider = this.add.rectangle(320, 58, 640, 116, 0x000000, 0);
-        this.consoleCollider = this.add.rectangle(320, 180, 315, 120, 0x000000, 0);
-        this.chairCollider = this.add.rectangle(320, 254, 50, 43, 0x000000, 0);
+        this.consoleCollider = this.add.rectangle(320, 180, 300, 120, 0x000000, 0);
+        this.chairCollider = this.add.rectangle(320, 260, 50, 66, 0x000000, 0);
         for (const obstacle of [this.upperWallCollider, this.consoleCollider, this.chairCollider]) {
             this.physics.add.existing(obstacle, true);
             this.physics.add.collider(this.player, obstacle);
