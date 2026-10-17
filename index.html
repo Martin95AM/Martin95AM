@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es-AR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/sol-amarillo.svg" />
@@ -7,10 +7,10 @@
     <title>Portfolio Martin</title>
     <style>
       #spotify-player {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        width: 300px;
+        position: fixed;
+        bottom: max(12px, env(safe-area-inset-bottom));
+        right: max(12px, env(safe-area-inset-right));
+        width: min(300px, calc(100vw - 24px));
         height: 80px;
         display: none;
         z-index: 10000;

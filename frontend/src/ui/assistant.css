@@ -25,5 +25,6 @@
 .assistant-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
 .assistant-stop, .assistant-new { flex: none; padding: 5px 8px; border: 1px solid #568da6; border-radius: 6px; color: #d4f3fb; background: #123248; font-family: inherit; font-size: 12px; cursor: pointer; }
 .assistant-status { min-height: 17px; margin: 0; color: #9cc4d1; font-size: 12px; }
+.assistant-voice-note { margin: 10px 0 0; color: #b7d6e0; font-size: 11px; line-height: 1.4; }
 .assistant-privacy { margin: 11px 0 0; color: #95b6c2; font-size: 11px; line-height: 1.4; }
-@media (max-width: 520px) { .assistant-panel { padding: 15px; }.assistant-message { max-width: 95%; }.assistant-compose { flex-direction: column; } }
+@media (max-width: 520px) { .assistant-overlay { padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }.assistant-panel { max-height: 100dvh; padding: 15px; }.assistant-log { min-height: 110px; max-height: 34dvh; }.assistant-message { max-width: 95%; }.assistant-compose { flex-wrap: wrap; }.assistant-compose input { flex-basis: 100%; }.assistant-compose button { flex: 1; min-height: 42px; } }

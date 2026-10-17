@@ -11,6 +11,10 @@ export default function Game() {
     width: 960,
     height: 540,
     parent: 'app',
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH
+    },
     backgroundColor: '#111111',
     physics: {
       default: 'arcade',

@@ -50,6 +50,8 @@ test('conserva el contexto de una charla completa y usa solo el perfil aprobado'
   assert.match(calls[4].options.messages[0].content, /Trivium/);
   assert.match(calls[4].options.messages[0].content, /nivel/);
   assert.match(calls[4].options.messages[0].content, /no inventes/i);
+  assert.match(calls[4].options.messages[0].content, /comediante argentino adulto/i);
+  assert.match(calls[4].options.messages[0].content, /No imites frases/i);
   assert.equal(calls[4].model, '@cf/meta/llama-3.3-70b-instruct-fp8-fast');
 });
 

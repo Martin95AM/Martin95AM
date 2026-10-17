@@ -36,7 +36,7 @@ jobs:
         run: npm ci
 
       - name: Test assistant, combat and weapon grip rules
-        run: node --test assistant-worker/src/index.test.js frontend/src/combat/rules.test.mjs frontend/src/art/weapons.test.mjs frontend/src/ui/patchBayRules.test.mjs
+        run: node --test assistant-worker/src/index.test.js frontend/src/combat/rules.test.mjs frontend/src/art/weapons.test.mjs frontend/src/ui/patchBayRules.test.mjs frontend/src/ui/voiceSelection.test.mjs
 
       - name: Build
         env:

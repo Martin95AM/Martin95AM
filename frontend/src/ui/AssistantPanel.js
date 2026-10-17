@@ -1,4 +1,5 @@
 import './assistant.css';
+import { isLikelyMaleVoice, pickSpanishVoice } from './voiceSelection.mjs';
 
 export default class AssistantPanel {
     constructor() {
@@ -11,6 +12,8 @@ export default class AssistantPanel {
         this.recognition = null;
         this.voice = null;
         this.synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+        this.onVoicesChanged = () => { this.voice = pickSpanishVoice(this.synth.getVoices()); };
+        this.synth?.addEventListener?.('voiceschanged', this.onVoicesChanged);
         this.root = document.createElement('div');
         this.root.className = 'assistant-overlay';
         this.root.hidden = true;
@@ -20,7 +23,7 @@ export default class AssistantPanel {
                     <div><span class="assistant-kicker">CUARTO DE MÁQUINAS · TERMINAL CENTRAL</span><h2 id="assistant-title">La voz del cuarto de máquinas</h2></div>
                     <button class="assistant-close" type="button" aria-label="Cerrar terminal">×</button>
                 </header>
-                <p class="assistant-intro">Pasá, charlemos un rato. Si querés saber algo de Martín, preguntame. También podés usar el micrófono.</p>
+                <p class="assistant-intro">Buenas, máquina. Preguntame por Martín o tirame cualquier tema para charlar. Se acepta micrófono, teclado y humor con un par de cables pelados.</p>
                 <div class="assistant-log" role="log" aria-live="polite" aria-label="Conversación"></div>
                 <form class="assistant-form">
                     <label for="assistant-question">Tu mensaje</label>
@@ -35,6 +38,7 @@ export default class AssistantPanel {
                     <button class="assistant-stop" type="button">Detener voz</button>
                     <p class="assistant-status" role="status"></p>
                 </div>
+                <p class="assistant-voice-note">Voz generada por tu navegador: elijo una masculina en español si Chrome la tiene; si no, uso un tono más grave.</p>
                 <p class="assistant-privacy">Tus mensajes se envían a Cloudflare para generar respuestas. No escribas datos sensibles. El reconocimiento de voz depende del navegador y puede procesar el audio en otro servicio; también podés escribir sin usar el micrófono.</p>
             </section>`;
         document.body.appendChild(this.root);
@@ -64,7 +68,7 @@ export default class AssistantPanel {
         };
         window.addEventListener('keydown', this.onKeyDown, true);
         this.setupMicrophone();
-        this.append('Voz del cuarto', 'Buenas, ¿cómo va? Pasá, charlemos.');
+        this.append('Voz del cuarto', 'Buenas, máquina. ¿Qué querés saber?');
         if (!this.synth) {
             this.root.querySelector('.assistant-stop').disabled = true;
             this.status.textContent = 'Este navegador no tiene síntesis de voz; las respuestas seguirán apareciendo en texto.';
@@ -177,15 +181,11 @@ export default class AssistantPanel {
     speak(reply) {
         if (!this.synth || !('SpeechSynthesisUtterance' in window)) return;
         this.synth.cancel();
-        if (!this.voice) {
-            const voices = this.synth.getVoices();
-            this.voice = voices.find(voice => voice.lang.toLowerCase() === 'es-ar')
-                || voices.find(voice => voice.lang.toLowerCase().startsWith('es'))
-                || null;
-        }
+        this.voice = pickSpanishVoice(this.synth.getVoices());
         const utterance = new SpeechSynthesisUtterance(reply);
-        utterance.lang = 'es-AR';
-        utterance.rate = 0.98;
+        utterance.lang = this.voice?.lang || 'es-AR';
+        utterance.rate = 0.96;
+        utterance.pitch = isLikelyMaleVoice(this.voice) ? 0.9 : 0.72;
         if (this.voice) utterance.voice = this.voice;
         utterance.onerror = () => {
             if (this.opened) this.status.textContent = 'No se pudo reproducir la voz; la respuesta sigue disponible en texto.';
@@ -202,7 +202,7 @@ export default class AssistantPanel {
         this.stopVoice();
         this.history = [];
         this.log.replaceChildren();
-        this.append('Voz del cuarto', 'Acá estoy. ¿De qué charlamos?');
+        this.append('Voz del cuarto', 'Acá estoy, máquina. ¿De qué charlamos?');
         this.status.textContent = 'Nueva charla iniciada.';
         this.input.focus();
     }
@@ -225,6 +225,7 @@ export default class AssistantPanel {
     destroy() {
         this.close();
         window.removeEventListener('keydown', this.onKeyDown, true);
+        this.synth?.removeEventListener?.('voiceschanged', this.onVoicesChanged);
         this.root.remove();
     }
 }
