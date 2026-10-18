@@ -54,6 +54,8 @@ test('conserva el contexto de una charla completa y usa solo el perfil aprobado'
   assert.match(calls[4].options.messages[0].content, /No imites frases/i);
   assert.match(calls[4].options.messages[0].content, /Martín Arias programó este asistente virtual/);
   assert.match(calls[4].options.messages[0].content, /No afirmes que creó o entrenó el modelo/);
+  assert.match(calls[4].options.messages[0].content, /no las realizó en Nipper Estudios/);
+  assert.match(calls[4].options.messages[0].content, /No atribuyas tareas administrativas a su puesto en Nipper Estudios/);
   assert.equal(calls[4].model, '@cf/meta/llama-3.3-70b-instruct-fp8-fast');
 });
 
