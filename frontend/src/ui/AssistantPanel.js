@@ -24,6 +24,7 @@ export default class AssistantPanel {
                     <button class="assistant-close" type="button" aria-label="Cerrar terminal">×</button>
                 </header>
                 <p class="assistant-intro">Buenas, máquina. Preguntame por Martín o tirame cualquier tema para charlar. Se acepta micrófono, teclado y humor con un par de cables pelados.</p>
+                <p class="assistant-credit">Asistente del sitio programado por Martín Arias.</p>
                 <div class="assistant-log" role="log" aria-live="polite" aria-label="Conversación"></div>
                 <form class="assistant-form">
                     <label for="assistant-question">Tu mensaje</label>
