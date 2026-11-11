@@ -40,15 +40,17 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.physics.add.existing(radarDesk, true);
         this.physics.add.collider(this.player, radarDesk);
         this.radarScreen = this.add.graphics().setDepth(8);
-        this.radarButton = this.add.text(113, 119, 'FLOTA INTL.', {
-            fontSize: '8px', fontFamily: 'monospace', fontStyle: 'bold', color: '#b9fff4',
-            backgroundColor: '#07404c', padding: { x: 5, y: 3 }
-        }).setOrigin(0.5).setDepth(12).setInteractive({ useHandCursor: true });
+        this.add.text(113, 99, 'FLOTA INTL.', {
+            fontSize: '6px', fontFamily: 'monospace', fontStyle: 'bold', color: '#b9fff4'
+        }).setOrigin(0.5).setDepth(10);
+        this.radarButton = this.add.rectangle(113, 87, 48, 34, 0, 0)
+            .setDepth(12).setInteractive({ useHandCursor: true });
         this.radarButton.on('pointerdown', () => this.openFleet());
-        // The phone is already painted onto the left edge of the main desk.
-        this.phoneButton = this.add.rectangle(236, 303, 20, 34, 0x0b3240, 0.55)
-            .setStrokeStyle(1, 0x89e6dc).setDepth(22).setInteractive({ useHandCursor: true });
-        this.add.text(236, 303, '📈', { fontSize: '10px' }).setOrigin(0.5).setDepth(23);
+        // Align the click target and subtle highlight with the phone in the room art.
+        this.phoneButton = this.add.rectangle(241, 308, 17, 28, 0x64e7d8, 0.12)
+            .setStrokeStyle(1, 0x89e6dc, 0.65).setDepth(22).setInteractive({ useHandCursor: true });
+        this.phoneButton.on('pointerover', () => this.phoneButton.setFillStyle(0x64e7d8, 0.27));
+        this.phoneButton.on('pointerout', () => this.phoneButton.setFillStyle(0x64e7d8, 0.12));
         this.phoneButton.on('pointerdown', () => this.openPhone());
 
         this.screen = this.add.graphics().setDepth(20);
@@ -151,9 +153,9 @@ export default class MachineRoomScene extends Phaser.Scene {
         g.clear();
         // Central monitor in the 640 × 640 room image.
         g.fillStyle(0x031725, 0.9);
-        g.fillRect(260, 235, 119, 37);
+        g.fillRect(262, 231, 117, 45);
         g.lineStyle(1, 0x247d9d, 0.8);
-        g.strokeRect(260, 235, 119, 37);
+        g.strokeRect(262, 231, 117, 45);
         g.lineStyle(1.5, 0x62edff, 0.95);
         const phase = time * 0.0014;
         g.beginPath();
@@ -179,16 +181,16 @@ export default class MachineRoomScene extends Phaser.Scene {
         const g = this.radarScreen;
         g.clear();
         g.fillStyle(0x031b29, 0.96);
-        g.fillRoundedRect(89, 71, 48, 32, 2);
+        g.fillRoundedRect(91, 72, 44, 31, 2);
         g.lineStyle(0.7, 0x44dccc, 0.6);
-        g.strokeCircle(113, 87, 13);
-        g.strokeCircle(113, 87, 7);
-        g.lineBetween(100, 87, 126, 87);
-        g.lineBetween(113, 74, 113, 100);
+        g.strokeCircle(113, 83, 10);
+        g.strokeCircle(113, 83, 5);
+        g.lineBetween(103, 83, 123, 83);
+        g.lineBetween(113, 73, 113, 93);
         const angle = time * 0.0016;
         g.lineStyle(1.7, 0x9cfff2, 0.9);
-        g.lineBetween(113, 87, 113 + Math.cos(angle) * 13, 87 + Math.sin(angle) * 13);
-        for (const [x, y] of [[107, 83], [120, 92], [114, 78]]) {
+        g.lineBetween(113, 83, 113 + Math.cos(angle) * 10, 83 + Math.sin(angle) * 10);
+        for (const [x, y] of [[107, 80], [119, 88], [114, 76]]) {
             g.fillStyle(0xa5fff1, 0.5 + Math.sin(time * 0.004 + x) * 0.3);
             g.fillCircle(x, y, 1.2);
         }
