@@ -3,6 +3,7 @@ import Player from '../entities/Player.js';
 import InputManager from '../managers/InputManager.js';
 import SaveManager from '../managers/SaveManager.js';
 import AssistantPanel from '../ui/AssistantPanel.js';
+import SolderPanel from '../ui/SolderPanel.js';
 
 export default class MachineRoomScene extends Phaser.Scene {
     constructor() { super('MachineRoomScene'); }
@@ -18,12 +19,19 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.cameras.main.setBackgroundColor('#061323');
         this.inputManager = new InputManager(this);
         this.assistantPanel = new AssistantPanel();
+        this.solderPanel = new SolderPanel(() => this.lampGlow.setVisible(true));
+        this.lampGlow = this.add.circle(522, 103, 35, 0xffca69, 0.25)
+            .setBlendMode(Phaser.BlendModes.ADD).setDepth(5).setVisible(this.solderPanel.completed);
 
         // The workstation is painted into the room art. Its collider leaves a
         // clear approach from the entrance while preventing walking over it.
         const workstation = this.add.rectangle(320, 298, 172, 145, 0, 0);
         this.physics.add.existing(workstation, true);
         this.physics.add.collider(this.player, workstation);
+        // The electronics bench and lamp are painted in the upper-right corner.
+        const electronicsBench = this.add.rectangle(480, 140, 150, 86, 0, 0);
+        this.physics.add.existing(electronicsBench, true);
+        this.physics.add.collider(this.player, electronicsBench);
 
         this.screen = this.add.graphics().setDepth(20);
         this.screenClock = 0;
@@ -39,6 +47,7 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.events.on('shutdown', () => {
             this.saveGame();
             this.assistantPanel.destroy();
+            this.solderPanel.destroy();
         });
         this.time.addEvent({ delay: 5000, loop: true, callback: () => this.saveGame() });
     }
@@ -51,7 +60,7 @@ export default class MachineRoomScene extends Phaser.Scene {
     update(time) {
         this.animateScreen(time);
         if (this.exiting) return;
-        if (this.assistantPanel.opened) {
+        if (this.assistantPanel.opened || this.solderPanel.opened) {
             this.player.setVelocity(0, 0);
             this.prompt.setVisible(false);
             return;
@@ -60,22 +69,32 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.player.setDepth(this.player.y);
         const nearExit = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 565) < 67;
         const nearPc = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 395) < 92;
-        this.prompt.setVisible(nearExit || nearPc);
+        const nearBench = Phaser.Math.Distance.Between(this.player.x, this.player.y, 480, 205) < 70;
+        this.prompt.setVisible(nearExit || nearPc || nearBench);
         if (nearExit) this.prompt.setText('E · Volver al estudio').setPosition(320, 490);
         else if (nearPc) this.prompt.setText('P · Examinar PC central').setPosition(320, 355);
+        else if (nearBench) this.prompt.setText('E · Soldar componentes').setPosition(480, 177);
         if (nearExit && Phaser.Input.Keyboard.JustDown(this.returnKey)) this.returnToStudio();
         if (nearPc && Phaser.Input.Keyboard.JustDown(this.pcKey)) this.openAssistant();
+        if (nearBench && Phaser.Input.Keyboard.JustDown(this.returnKey)) this.openSolder();
     }
 
     interact() {
         if (this.exiting) return;
         if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 565) < 67) this.returnToStudio();
         else if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 395) < 92) this.openAssistant();
+        else if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 480, 205) < 70) this.openSolder();
     }
 
     openAssistant() {
         this.player.setVelocity(0, 0);
         this.assistantPanel.open();
+    }
+
+    openSolder() {
+        this.player.setVelocity(0, 0);
+        this.inputManager.targetPosition = null;
+        this.solderPanel.open();
     }
 
     returnToStudio() {
