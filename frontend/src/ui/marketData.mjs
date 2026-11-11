@@ -28,6 +28,24 @@ export async function fetchHistory(ticker, signal) {
   return parseHistory(await response.text(), symbol);
 }
 
+export function parseStockSearch(body) {
+  if (!Array.isArray(body?.results)) return [];
+  return body.results.filter(row => row.dataset === 'stocks/us' && row.status === 'active')
+    .map(row => {
+      try { return { ticker: normalizeTicker(row.ticker), name: String(row.name || row.ticker) }; }
+      catch { return null; }
+    }).filter(Boolean).slice(0, 12);
+}
+
+export async function searchStocks(query, signal) {
+  const term = String(query ?? '').trim().slice(0, 60);
+  if (!term) return [];
+  const parameters = new URLSearchParams({ q: term, dataset: 'stocks/us', status: 'active', limit: '12' });
+  const response = await fetch(`${MARKET_SOURCE}/api/v1/search?${parameters}`, { signal });
+  if (!response.ok) throw new Error('No se pudo consultar el catálogo de acciones.');
+  return parseStockSearch(await response.json());
+}
+
 export function normalizePosition(ticker, quantity, averageCost) {
   const symbol = normalizeTicker(ticker);
   const units = Number(quantity);

@@ -1,4 +1,4 @@
-.market-overlay[hidden], .market-view[hidden], .market-quote[hidden], .market-charts[hidden] { display: none; }
+.market-overlay[hidden], .market-view[hidden], .market-quote[hidden], .market-charts[hidden], .market-search-results[hidden] { display: none; }
 .market-overlay { position: fixed; inset: 0; z-index: 30030; display: grid; place-items: center; padding: 12px; box-sizing: border-box; background: #020b17df; backdrop-filter: blur(7px); }
 .market-phone { display: flex; flex-direction: column; box-sizing: border-box; width: min(460px, 100%); height: min(760px, 96dvh); overflow: hidden; border: 3px solid #43596c; border-radius: 27px; color: #e4f0ef; background: #0b1c2b; box-shadow: 0 24px 80px #000d, inset 0 0 0 2px #091420; font: 13px Arial, sans-serif; }
 .market-phone * { box-sizing: border-box; }
@@ -16,7 +16,13 @@
 .market-search > div { display: flex; gap: 7px; }
 .market-search input, .market-add input { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #6a9297; border-radius: 7px; color: #f6fffa; background: #122e3b; }
 .market-search button, .market-add button { flex: none; padding: 8px 11px; border: 1px solid #9cdaad; border-radius: 7px; color: #10372f; background: #9de4bf; font-weight: 700; }
+.market-search-results { max-height: 205px; overflow: auto; margin-top: 6px; border: 1px solid #638b92; border-radius: 7px; background: #173745; }
+.market-search-results button { display: flex; width: 100%; align-items: baseline; gap: 9px; padding: 8px 10px; border: 0; border-bottom: 1px solid #315763; color: #d8f1ec; background: transparent; text-align: left; }
+.market-search-results button:hover, .market-search-results button:focus-visible { background: #285763; }
+.market-search-results strong { flex: none; min-width: 52px; color: #ffe0a5; font: 700 11px monospace; }
+.market-search-results span { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .market-watchlist { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; }
+.market-catalog-note { margin: -3px 0 7px; color: #a6c8c2; font-size: 10px; }
 .market-watchlist button { padding: 5px 7px; border: 1px solid #5c8588; border-radius: 6px; color: #c9e8e0; background: #173644; font: 700 10px monospace; }
 .market-watchlist button:hover { border-color: #a7e9c9; }
 .market-message, .market-portfolio-message { min-height: 18px; margin: 9px 0; color: #b9d9d5; font-size: 11px; }

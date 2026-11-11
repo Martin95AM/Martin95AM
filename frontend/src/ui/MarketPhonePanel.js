@@ -1,4 +1,4 @@
-import { fetchHistory, normalizeTicker, normalizePosition, readPortfolio, positionValue, MARKET_SOURCE } from './marketData.mjs';
+import { fetchHistory, searchStocks, normalizeTicker, normalizePosition, readPortfolio, positionValue, MARKET_SOURCE } from './marketData.mjs';
 import './market-phone.css';
 
 const STORAGE_KEY = 'martinquest-market-portfolio-v1';
@@ -42,8 +42,10 @@ export default class MarketPhonePanel {
       <nav class="market-tabs" aria-label="Secciones del celular"><button type="button" data-tab="market" aria-current="page">📊 Mercados</button><button type="button" data-tab="portfolio">💼 Mi cartera</button></nav>
       <main class="market-content">
         <div class="market-view" data-view="market">
-          <form class="market-search"><label for="market-ticker">Símbolo de EE.UU. o ADR</label><div><input id="market-ticker" name="ticker" value="AAPL" autocomplete="off" maxlength="10" placeholder="AAPL, YPF, GGAL…"><button type="submit">Consultar</button></div></form>
+          <form class="market-search"><label for="market-ticker">Buscá por empresa o símbolo de EE.UU.</label><div><input id="market-ticker" name="ticker" value="AAPL" autocomplete="off" maxlength="60" placeholder="Tesla, YPF, Microsoft…"><button type="submit">Consultar</button></div></form>
+          <div class="market-search-results" role="listbox" aria-label="Acciones encontradas" hidden></div>
           <div class="market-watchlist" role="group" aria-label="Acciones sugeridas">${WATCHLIST.map(ticker => `<button type="button" data-symbol="${ticker}">${ticker}</button>`).join('')}</div>
+          <p class="market-catalog-note">Los botones son ejemplos. El buscador consulta todas las acciones, ETF y ADR disponibles.</p>
           <p class="market-message" role="status" aria-live="polite"></p>
           <div class="market-quote" hidden><div class="market-quote-top"><div><span class="market-symbol"></span><small>Acción / ADR · USD</small></div><strong class="market-last"></strong></div><div class="market-quote-meta"><span class="market-change"></span><span class="market-stamp"></span></div></div>
           <div class="market-charts" hidden><div class="market-chart-header"><strong>Precio de cierre · barras horarias</strong><select class="market-range" aria-label="Cantidad de barras"><option value="24">24 barras</option><option value="50" selected>50 barras</option><option value="100">100 barras</option></select></div><svg class="market-chart market-price-chart" viewBox="0 0 360 150" role="img" aria-label="Histograma de precios de cierre"></svg><strong class="market-volume-title">Volumen operado</strong><svg class="market-chart market-volume-chart" viewBox="0 0 360 150" role="img" aria-label="Histograma de volumen operado"></svg></div>
@@ -59,6 +61,7 @@ export default class MarketPhonePanel {
     this.message = this.root.querySelector('.market-message');
     this.portfolioMessage = this.root.querySelector('.market-portfolio-message');
     this.search = this.root.querySelector('.market-search');
+    this.searchResults = this.root.querySelector('.market-search-results');
     this.addForm = this.root.querySelector('.market-add');
     this.root.querySelector('.market-close').addEventListener('click', () => this.close());
     this.root.addEventListener('pointerdown', event => { if (event.target === this.root) this.close(); });
@@ -70,9 +73,19 @@ export default class MarketPhonePanel {
       const button = event.target.closest('[data-symbol]');
       if (button) this.loadTicker(button.dataset.symbol);
     });
+    this.search.elements.ticker.addEventListener('input', () => {
+      clearTimeout(this.searchTimer);
+      const query = this.search.elements.ticker.value.trim();
+      if (query.length < 2) { this.hideSearchResults(); return; }
+      this.searchTimer = setTimeout(() => this.lookupSymbols(query), 250);
+    });
+    this.searchResults.addEventListener('click', event => {
+      const button = event.target.closest('[data-ticker]');
+      if (button) this.loadTicker(button.dataset.ticker);
+    });
     this.search.addEventListener('submit', event => {
       event.preventDefault();
-      this.loadTicker(this.search.elements.ticker.value);
+      this.submitSearch();
     });
     this.root.querySelector('.market-range').addEventListener('change', () => this.renderCharts());
     this.addForm.addEventListener('submit', event => { event.preventDefault(); this.savePosition(); });
@@ -101,11 +114,57 @@ export default class MarketPhonePanel {
     } finally { this.controllers.delete(controller); }
   }
 
+  hideSearchResults() {
+    this.searchResults.hidden = true;
+    this.searchResults.replaceChildren();
+  }
+
+  async lookupSymbols(query) {
+    this.searchController?.abort();
+    const controller = new AbortController();
+    this.searchController = controller;
+    try {
+      const matches = await searchStocks(query, controller.signal);
+      if (controller.signal.aborted || !this.opened || this.search.elements.ticker.value.trim() !== query) return null;
+      this.searchResults.replaceChildren();
+      for (const match of matches) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.ticker = match.ticker;
+        button.setAttribute('role', 'option');
+        const symbol = document.createElement('strong');
+        symbol.textContent = match.ticker;
+        const name = document.createElement('span');
+        name.textContent = match.name;
+        button.append(symbol, name);
+        this.searchResults.append(button);
+      }
+      this.searchResults.hidden = !matches.length;
+      return matches;
+    } catch (error) {
+      if (error.name !== 'AbortError') this.message.textContent = error.message;
+      return null;
+    }
+  }
+
+  async submitSearch() {
+    const query = this.search.elements.ticker.value.trim();
+    if (!query) return;
+    const matches = await this.lookupSymbols(query);
+    if (matches === null) return;
+    const exact = matches.find(match => match.ticker === query.toUpperCase() || match.name.toLowerCase() === query.toLowerCase());
+    if (exact) this.loadTicker(exact.ticker);
+    else if (matches.length) this.message.textContent = 'Elegí una acción de los resultados encontrados.';
+    else this.loadTicker(query);
+  }
+
   async loadTicker(value) {
     let ticker;
     try { ticker = normalizeTicker(value); }
     catch (error) { this.message.textContent = error.message; return; }
     this.selected = ticker;
+    this.searchController?.abort();
+    this.hideSearchResults();
     this.search.elements.ticker.value = ticker;
     this.message.textContent = `Consultando ${ticker}…`;
     this.root.querySelector('.market-quote').hidden = true;
@@ -255,6 +314,9 @@ export default class MarketPhonePanel {
     if (!this.opened) return;
     this.opened = false;
     this.currentRequest = null;
+    clearTimeout(this.searchTimer);
+    this.searchController?.abort();
+    this.hideSearchResults();
     for (const controller of this.controllers) controller.abort();
     this.controllers.clear();
     this.root.hidden = true;
