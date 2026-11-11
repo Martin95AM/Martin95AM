@@ -2,15 +2,6 @@ import './fleet.css';
 
 export default class FleetPanel {
   constructor() {
-    this.trigger = document.createElement('button');
-    this.trigger.className = 'fleet-trigger';
-    this.trigger.type = 'button';
-    this.trigger.textContent = '🚚 Flota internacional';
-    this.trigger.setAttribute('aria-haspopup', 'dialog');
-    this.trigger.setAttribute('aria-expanded', 'false');
-    this.trigger.addEventListener('click', () => this.open());
-    document.body.append(this.trigger);
-
     this.root = document.createElement('div');
     this.root.className = 'fleet-overlay';
     this.root.hidden = true;
@@ -40,16 +31,15 @@ export default class FleetPanel {
 
   open() {
     if (!this.frame.hasAttribute('src')) this.frame.src = `${import.meta.env.BASE_URL}fleet/index.html`;
+    this.returnFocus = document.activeElement;
     this.opened = true;
     this.root.hidden = false;
-    this.trigger.setAttribute('aria-expanded', 'true');
     this.closeButton.focus();
   }
 
   close() {
     this.opened = false;
     this.root.hidden = true;
-    this.trigger.setAttribute('aria-expanded', 'false');
-    this.trigger.focus();
+    this.returnFocus?.focus?.();
   }
 }

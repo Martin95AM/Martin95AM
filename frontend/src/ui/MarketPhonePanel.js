@@ -2,7 +2,6 @@ import { fetchHistory, searchStocks, normalizeTicker, normalizePosition, readPor
 import './market-phone.css';
 
 const STORAGE_KEY = 'martinquest-market-portfolio-v1';
-const WATCHLIST = ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'TSLA', 'MELI', 'YPF', 'GGAL'];
 const money = value => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value);
 const compact = value => new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 const signed = value => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
@@ -44,8 +43,7 @@ export default class MarketPhonePanel {
         <div class="market-view" data-view="market">
           <form class="market-search"><label for="market-ticker">Buscá por empresa o símbolo de EE.UU.</label><div><input id="market-ticker" name="ticker" value="AAPL" autocomplete="off" maxlength="60" placeholder="Tesla, YPF, Microsoft…"><button type="submit">Consultar</button></div></form>
           <div class="market-search-results" role="listbox" aria-label="Acciones encontradas" hidden></div>
-          <div class="market-watchlist" role="group" aria-label="Acciones sugeridas">${WATCHLIST.map(ticker => `<button type="button" data-symbol="${ticker}">${ticker}</button>`).join('')}</div>
-          <p class="market-catalog-note">Los botones son ejemplos. El buscador consulta todas las acciones, ETF y ADR disponibles.</p>
+          <p class="market-catalog-note">Buscá acciones, ETF y ADR por nombre o símbolo.</p>
           <p class="market-message" role="status" aria-live="polite"></p>
           <div class="market-quote" hidden><div class="market-quote-top"><div><span class="market-symbol"></span><small>Acción / ADR · USD</small></div><strong class="market-last"></strong></div><div class="market-quote-meta"><span class="market-change"></span><span class="market-stamp"></span></div></div>
           <div class="market-charts" hidden><div class="market-chart-header"><strong>Precio de cierre · barras horarias</strong><select class="market-range" aria-label="Cantidad de barras"><option value="24">24 barras</option><option value="50" selected>50 barras</option><option value="100">100 barras</option></select></div><svg class="market-chart market-price-chart" viewBox="0 0 360 150" role="img" aria-label="Histograma de precios de cierre"></svg><strong class="market-volume-title">Volumen operado</strong><svg class="market-chart market-volume-chart" viewBox="0 0 360 150" role="img" aria-label="Histograma de volumen operado"></svg></div>
@@ -68,10 +66,6 @@ export default class MarketPhonePanel {
     this.root.querySelector('.market-tabs').addEventListener('click', event => {
       const button = event.target.closest('[data-tab]');
       if (button) this.switchTab(button.dataset.tab);
-    });
-    this.root.querySelector('.market-watchlist').addEventListener('click', event => {
-      const button = event.target.closest('[data-symbol]');
-      if (button) this.loadTicker(button.dataset.symbol);
     });
     this.search.elements.ticker.addEventListener('input', () => {
       clearTimeout(this.searchTimer);
@@ -148,6 +142,7 @@ export default class MarketPhonePanel {
   }
 
   async submitSearch() {
+    clearTimeout(this.searchTimer);
     const query = this.search.elements.ticker.value.trim();
     if (!query) return;
     const matches = await this.lookupSymbols(query);
