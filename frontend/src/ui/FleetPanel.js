@@ -34,16 +34,20 @@ export default class FleetPanel {
         });
       } catch { /* El botón Cerrar sigue disponible si el contenido no comparte origen. */ }
     });
+    this.opened = false;
+    FleetPanel.active = this;
   }
 
   open() {
     if (!this.frame.hasAttribute('src')) this.frame.src = `${import.meta.env.BASE_URL}fleet/index.html`;
+    this.opened = true;
     this.root.hidden = false;
     this.trigger.setAttribute('aria-expanded', 'true');
     this.closeButton.focus();
   }
 
   close() {
+    this.opened = false;
     this.root.hidden = true;
     this.trigger.setAttribute('aria-expanded', 'false');
     this.trigger.focus();

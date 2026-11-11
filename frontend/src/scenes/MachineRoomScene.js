@@ -4,6 +4,8 @@ import InputManager from '../managers/InputManager.js';
 import SaveManager from '../managers/SaveManager.js';
 import AssistantPanel from '../ui/AssistantPanel.js';
 import SolderPanel from '../ui/SolderPanel.js';
+import FleetPanel from '../ui/FleetPanel.js';
+import MarketPhonePanel from '../ui/MarketPhonePanel.js';
 
 export default class MachineRoomScene extends Phaser.Scene {
     constructor() { super('MachineRoomScene'); }
@@ -20,6 +22,7 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.inputManager = new InputManager(this);
         this.assistantPanel = new AssistantPanel();
         this.solderPanel = new SolderPanel(() => this.lampGlow.setVisible(true));
+        this.marketPhonePanel = new MarketPhonePanel();
         this.lampGlow = this.add.circle(522, 103, 35, 0xffca69, 0.25)
             .setBlendMode(Phaser.BlendModes.ADD).setDepth(5).setVisible(this.solderPanel.completed);
 
@@ -32,6 +35,21 @@ export default class MachineRoomScene extends Phaser.Scene {
         const electronicsBench = this.add.rectangle(480, 140, 150, 86, 0, 0);
         this.physics.add.existing(electronicsBench, true);
         this.physics.add.collider(this.player, electronicsBench);
+        // Fleet radar workstation in the upper-left corner.
+        const radarDesk = this.add.rectangle(130, 132, 140, 82, 0, 0);
+        this.physics.add.existing(radarDesk, true);
+        this.physics.add.collider(this.player, radarDesk);
+        this.radarScreen = this.add.graphics().setDepth(8);
+        this.radarButton = this.add.text(113, 119, 'FLOTA INTL.', {
+            fontSize: '8px', fontFamily: 'monospace', fontStyle: 'bold', color: '#b9fff4',
+            backgroundColor: '#07404c', padding: { x: 5, y: 3 }
+        }).setOrigin(0.5).setDepth(12).setInteractive({ useHandCursor: true });
+        this.radarButton.on('pointerdown', () => this.openFleet());
+        // The phone is already painted onto the left edge of the main desk.
+        this.phoneButton = this.add.rectangle(236, 303, 20, 34, 0x0b3240, 0.55)
+            .setStrokeStyle(1, 0x89e6dc).setDepth(22).setInteractive({ useHandCursor: true });
+        this.add.text(236, 303, '📈', { fontSize: '10px' }).setOrigin(0.5).setDepth(23);
+        this.phoneButton.on('pointerdown', () => this.openPhone());
 
         this.screen = this.add.graphics().setDepth(20);
         this.screenClock = 0;
@@ -48,6 +66,7 @@ export default class MachineRoomScene extends Phaser.Scene {
             this.saveGame();
             this.assistantPanel.destroy();
             this.solderPanel.destroy();
+            this.marketPhonePanel.destroy();
         });
         this.time.addEvent({ delay: 5000, loop: true, callback: () => this.saveGame() });
     }
@@ -59,8 +78,9 @@ export default class MachineRoomScene extends Phaser.Scene {
 
     update(time) {
         this.animateScreen(time);
+        this.animateRadar(time);
         if (this.exiting) return;
-        if (this.assistantPanel.opened || this.solderPanel.opened) {
+        if (this.assistantPanel.opened || this.solderPanel.opened || this.marketPhonePanel.opened || FleetPanel.active?.opened) {
             this.player.setVelocity(0, 0);
             this.prompt.setVisible(false);
             return;
@@ -70,20 +90,28 @@ export default class MachineRoomScene extends Phaser.Scene {
         const nearExit = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 565) < 67;
         const nearPc = Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 395) < 92;
         const nearBench = Phaser.Math.Distance.Between(this.player.x, this.player.y, 480, 205) < 70;
-        this.prompt.setVisible(nearExit || nearPc || nearBench);
+        const nearRadar = Phaser.Math.Distance.Between(this.player.x, this.player.y, 145, 190) < 75;
+        const nearPhone = Phaser.Math.Distance.Between(this.player.x, this.player.y, 211, 345) < 67;
+        this.prompt.setVisible(nearExit || nearPc || nearBench || nearRadar || nearPhone);
         if (nearExit) this.prompt.setText('E · Volver al estudio').setPosition(320, 490);
+        else if (nearPhone) this.prompt.setText('E · Tomar celular financiero').setPosition(215, 326);
         else if (nearPc) this.prompt.setText('P · Examinar PC central').setPosition(320, 355);
         else if (nearBench) this.prompt.setText('E · Soldar componentes').setPosition(480, 177);
+        else if (nearRadar) this.prompt.setText('E · Flota internacional').setPosition(145, 164);
         if (nearExit && Phaser.Input.Keyboard.JustDown(this.returnKey)) this.returnToStudio();
         if (nearPc && Phaser.Input.Keyboard.JustDown(this.pcKey)) this.openAssistant();
+        if (nearPhone && Phaser.Input.Keyboard.JustDown(this.returnKey)) this.openPhone();
         if (nearBench && Phaser.Input.Keyboard.JustDown(this.returnKey)) this.openSolder();
+        if (nearRadar && Phaser.Input.Keyboard.JustDown(this.returnKey)) this.openFleet();
     }
 
     interact() {
         if (this.exiting) return;
         if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 565) < 67) this.returnToStudio();
+        else if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 211, 345) < 67) this.openPhone();
         else if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 320, 395) < 92) this.openAssistant();
         else if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 480, 205) < 70) this.openSolder();
+        else if (Phaser.Math.Distance.Between(this.player.x, this.player.y, 145, 190) < 75) this.openFleet();
     }
 
     openAssistant() {
@@ -95,6 +123,18 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.player.setVelocity(0, 0);
         this.inputManager.targetPosition = null;
         this.solderPanel.open();
+    }
+
+    openFleet() {
+        this.player.setVelocity(0, 0);
+        this.inputManager.targetPosition = null;
+        FleetPanel.active?.open();
+    }
+
+    openPhone() {
+        this.player.setVelocity(0, 0);
+        this.inputManager.targetPosition = null;
+        this.marketPhonePanel.open();
     }
 
     returnToStudio() {
@@ -132,6 +172,25 @@ export default class MachineRoomScene extends Phaser.Scene {
             const radius = 2.2 + Math.sin(phase + i * 1.8) * 0.6;
             g.lineStyle(1, 0x79f1ff, 0.65 + Math.sin(phase + i) * 0.25);
             g.strokeCircle(370 + (i % 2) * 4, 241 + i * 10, radius);
+        }
+    }
+
+    animateRadar(time) {
+        const g = this.radarScreen;
+        g.clear();
+        g.fillStyle(0x031b29, 0.96);
+        g.fillRoundedRect(89, 71, 48, 32, 2);
+        g.lineStyle(0.7, 0x44dccc, 0.6);
+        g.strokeCircle(113, 87, 13);
+        g.strokeCircle(113, 87, 7);
+        g.lineBetween(100, 87, 126, 87);
+        g.lineBetween(113, 74, 113, 100);
+        const angle = time * 0.0016;
+        g.lineStyle(1.7, 0x9cfff2, 0.9);
+        g.lineBetween(113, 87, 113 + Math.cos(angle) * 13, 87 + Math.sin(angle) * 13);
+        for (const [x, y] of [[107, 83], [120, 92], [114, 78]]) {
+            g.fillStyle(0xa5fff1, 0.5 + Math.sin(time * 0.004 + x) * 0.3);
+            g.fillCircle(x, y, 1.2);
         }
     }
 }
