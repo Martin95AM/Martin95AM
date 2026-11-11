@@ -32,11 +32,22 @@
 .solder-wave-grid { stroke: #4b766a; stroke-width: 1; stroke-dasharray: 4 6; }
 .solder-wave-clean { stroke: #6dd9f4; stroke-width: 2; }
 .solder-wave-dirty { stroke: #ffbd6a; stroke-width: 2.4; }
-.solder-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
-.solder-controls label { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; min-width: 135px; flex: 1; color: #d6e7dc; font: 700 10px monospace; }
-.solder-controls input { grid-column: 1 / -1; width: 100%; accent-color: #e4ae70; }
-.solder-audio { min-height: 35px; padding: 7px 11px; border: 1px solid #e2c08b; border-radius: 7px; color: #ffe8c1; background: #354c49; font-size: 11px; }
+.solder-control-dock { position: fixed; right: 16px; bottom: 16px; z-index: 30; width: 210px; max-height: calc(100dvh - 32px); overflow: auto; border: 1px solid #c5a776; border-radius: 10px; background: #102a30f5; box-shadow: 0 12px 34px #000c, inset 0 1px #ffffff24; backdrop-filter: blur(8px); }
+.solder-control-dock.collapsed { width: 40px; }
+.solder-dock-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 36px; padding: 7px 10px; border: 0; color: #ffe2a8; background: #25433e; text-align: left; font: 700 10px monospace; letter-spacing: .04em; }
+.solder-control-dock.collapsed .solder-dock-toggle { justify-content: center; padding: 5px; }
+.solder-control-dock.collapsed .solder-dock-toggle span:first-child { display: none; }
+.solder-dock-toggle:hover { background: #31574c; }
+.solder-dock-state { font-size: 17px; line-height: 1; }
+.solder-controls[hidden] { display: none; }
+.solder-controls { display: grid; gap: 6px; padding: 8px 9px 9px; }
+.solder-controls label { display: grid; grid-template-columns: 39px minmax(0, 1fr) 28px; align-items: center; gap: 4px; min-width: 0; color: #d6e7dc; font: 700 9px monospace; }
+.solder-controls input { grid-column: 2; width: 100%; margin: 0; accent-color: #e4ae70; }
+.solder-controls label span { grid-column: 3; text-align: right; }
+.solder-audio { min-height: 32px; padding: 5px 8px; border: 1px solid #e2c08b; border-radius: 7px; color: #ffe8c1; background: #354c49; font-size: 10px; }
+.solder-audio:disabled { opacity: .48; cursor: default; }
 .solder-scope small { display: block; margin-top: 8px; color: #a7c2bb; font-size: 10px; }
 @media (max-width: 900px) { .solder-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 681px) { .solder-panel.dock-expanded .solder-footer { padding-right: 220px; } .solder-panel.dock-expanded .solder-scope { margin-right: 220px; } }
 @media (max-width: 680px) { .solder-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } .solder-schematic-heading { flex-wrap: wrap; } .solder-schematic-hint { display: block; } }
-@media (max-width: 480px) { .solder-slot { min-height: 128px; } .solder-slot.chip .solder-pad, .solder-slot.pot .solder-pad { width: 23px; height: 23px; border-width: 4px; } .solder-scope-title { flex-wrap: wrap; } }
+@media (max-width: 480px) { .solder-slot { min-height: 128px; } .solder-slot.chip .solder-pad, .solder-slot.pot .solder-pad { width: 23px; height: 23px; border-width: 4px; } .solder-scope-title { flex-wrap: wrap; } .solder-control-dock { right: 8px; bottom: 8px; width: 188px; } }

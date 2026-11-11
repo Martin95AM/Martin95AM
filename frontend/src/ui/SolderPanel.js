@@ -58,9 +58,17 @@ export default class SolderPanel {
           <div class="solder-scope-title"><strong>OSCILOSCOPIO · SEÑAL DE PRUEBA</strong><span>Azul: guitarra limpia · ámbar: salida del circuito</span></div>
           <p class="solder-scope-state"></p>
           <svg class="solder-wave" viewBox="0 0 845 112" role="img" aria-label="Comparación entre la señal limpia y la señal distorsionada"><path class="solder-wave-grid" d="M0 29H845M0 84H845M0 56H845"/><path class="solder-wave-clean"/><path class="solder-wave-dirty"/></svg>
-          <div class="solder-controls"><label>DRIVE <input data-control="drive" type="range" min="0" max="100" value="72"><span data-value="drive">72%</span></label><label>TONO <input data-control="tone" type="range" min="0" max="100" value="54"><span data-value="tone">54%</span></label><label>LEVEL <input data-control="level" type="range" min="0" max="100" value="60"><span data-value="level">60%</span></label><button class="solder-audio" type="button">▶ Escuchar tono de prueba</button></div>
           <small>Simulación visual y tono sintetizado para escuchar el efecto; el circuito mostrado es educativo.</small>
         </div>
+        <aside class="solder-control-dock" aria-label="Controles del pedal">
+        <button class="solder-dock-toggle" type="button" aria-expanded="true" aria-controls="solder-dock-body"><span>🎛 CONTROLES DEL PEDAL</span><span class="solder-dock-state" aria-hidden="true">−</span></button>
+        <div class="solder-controls" id="solder-dock-body">
+          <label>DRIVE <input data-control="drive" type="range" min="0" max="100" value="72"><span data-value="drive">72%</span></label>
+          <label>TONO <input data-control="tone" type="range" min="0" max="100" value="54"><span data-value="tone">54%</span></label>
+          <label>LEVEL <input data-control="level" type="range" min="0" max="100" value="60"><span data-value="level">60%</span></label>
+          <button class="solder-audio" type="button">▶ Escuchar tono</button>
+        </div>
+        </aside>
       </section>`;
     document.body.append(this.root);
     this.panel = this.root.querySelector('.solder-panel');
@@ -72,13 +80,18 @@ export default class SolderPanel {
     this.testButton = this.root.querySelector('.solder-test');
     this.rotateButton = this.root.querySelector('.solder-rotate');
     this.scope = this.root.querySelector('.solder-scope');
+    this.controlDock = this.root.querySelector('.solder-control-dock');
+    this.controls = this.controlDock.querySelector('.solder-controls');
+    this.dockToggle = this.controlDock.querySelector('.solder-dock-toggle');
+    this.audioButton = this.controlDock.querySelector('.solder-audio');
     this.closeButton = this.root.querySelector('.solder-close');
     this.closeButton.addEventListener('click', () => this.close());
     this.root.querySelector('.solder-reset').addEventListener('click', () => this.startRound());
     this.testButton.addEventListener('click', () => this.testCircuit());
     this.rotateButton.addEventListener('click', () => this.rotateSelected());
-    this.scope.addEventListener('input', event => { if (event.target.matches('[data-control]')) this.updateScope(); });
-    this.root.querySelector('.solder-audio').addEventListener('click', () => this.toggleAudio());
+    this.controls.addEventListener('input', event => { if (event.target.matches('[data-control]')) this.updateScope(); });
+    this.audioButton.addEventListener('click', () => this.toggleAudio());
+    this.dockToggle.addEventListener('click', () => this.setDockExpanded(!this.dockExpanded));
     this.tray.addEventListener('click', event => {
       const button = event.target.closest('[data-select]');
       if (button) this.selectPart(button.dataset.select);
@@ -99,6 +112,8 @@ export default class SolderPanel {
       } else if (event.key === 'Tab') this.trapFocus(event);
     };
     window.addEventListener('keydown', this.onKeyDown, true);
+    this.onResize = () => { if (this.opened && window.innerWidth <= 680) this.setDockExpanded(false); };
+    window.addEventListener('resize', this.onResize);
     this.startRound();
   }
 
@@ -258,6 +273,7 @@ export default class SolderPanel {
     ];
     this.root.querySelector('.solder-checks').innerHTML = checks.map(([name, active]) => `<span class="${active ? 'connected' : ''}">${active ? '●' : '○'} ${name}</span>`).join('');
     this.testButton.disabled = this.won;
+    this.audioButton.disabled = !this.analysis.signalPath;
     this.testButton.textContent = this.won ? 'Pedal funcionando ✓' : 'Probar pedal →';
     this.renderStats();
     if (!this.scope.hidden) this.updateScope();
@@ -295,17 +311,18 @@ export default class SolderPanel {
     catch { /* El resultado queda visible aunque no se pueda guardar. */ }
     this.render();
     this.updateScope();
+    if (window.innerWidth > 680) this.setDockExpanded(true);
     this.setStatus(`¡Pedal funcionando! La señal se recorta y se encendió el piloto de la mesa. ${score} puntos.`);
     this.onComplete();
   }
 
   updateScope() {
-    const read = name => Number(this.scope.querySelector(`[data-control="${name}"]`).value) / 100;
+    const read = name => Number(this.controls.querySelector(`[data-control="${name}"]`).value) / 100;
     const drive = read('drive');
     const tone = read('tone');
     const level = read('level');
     for (const name of ['drive', 'tone', 'level']) {
-      this.scope.querySelector(`[data-value="${name}"]`).textContent = `${Math.round(read(name) * 100)}%`;
+      this.controls.querySelector(`[data-value="${name}"]`).textContent = `${Math.round(read(name) * 100)}%`;
     }
     this.analysis = analyzeCircuit(this.placed, this.soldered, this.orientations);
     const signal = simulateCircuit(this.analysis, { drive, tone, level });
@@ -346,7 +363,7 @@ export default class SolderPanel {
     this.updateScope();
     oscillator.start();
     context.resume();
-    this.scope.querySelector('.solder-audio').textContent = '■ Detener tono';
+    this.audioButton.textContent = '■ Detener tono';
   }
 
   stopAudio() {
@@ -354,11 +371,21 @@ export default class SolderPanel {
     this.audio.oscillator.stop();
     this.audio.context.close();
     this.audio = null;
-    this.scope.querySelector('.solder-audio').textContent = '▶ Escuchar tono de prueba';
+    this.audioButton.textContent = '▶ Escuchar tono';
+  }
+
+  setDockExpanded(expanded) {
+    this.dockExpanded = expanded;
+    this.panel.classList.toggle('dock-expanded', expanded);
+    this.controlDock.classList.toggle('collapsed', !expanded);
+    this.controls.hidden = !expanded;
+    this.dockToggle.setAttribute('aria-expanded', String(expanded));
+    this.dockToggle.setAttribute('aria-label', expanded ? 'Plegar controles del pedal' : 'Abrir controles del pedal');
+    this.dockToggle.querySelector('.solder-dock-state').textContent = expanded ? '−' : '🎛';
   }
 
   trapFocus(event) {
-    const focusable = [...this.panel.querySelectorAll('button:not(:disabled)')].filter(button => button.getClientRects().length);
+    const focusable = [...this.root.querySelectorAll('button:not(:disabled), input:not(:disabled)')].filter(element => element.getClientRects().length);
     if (event.shiftKey && document.activeElement === focusable[0]) { event.preventDefault(); focusable.at(-1)?.focus(); }
     else if (!event.shiftKey && document.activeElement === focusable.at(-1)) { event.preventDefault(); focusable[0]?.focus(); }
   }
@@ -369,6 +396,7 @@ export default class SolderPanel {
     if (this.pausedAt && !this.won) this.startedAt += performance.now() - this.pausedAt;
     this.pausedAt = null;
     this.root.hidden = false;
+    this.setDockExpanded(false);
     this.clockTimer = setInterval(() => { if (!this.won) this.renderElapsed(); }, 250);
     this.closeButton.focus();
   }
@@ -392,6 +420,7 @@ export default class SolderPanel {
   destroy() {
     this.close();
     window.removeEventListener('keydown', this.onKeyDown, true);
+    window.removeEventListener('resize', this.onResize);
     this.root.remove();
   }
 }
