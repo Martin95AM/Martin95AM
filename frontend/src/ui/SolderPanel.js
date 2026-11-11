@@ -1,5 +1,6 @@
 import { PARTS, TOTAL_PINS, HEAT, temperatureAt, jointQuality, orientationMatches, circuitComplete, scoreFor } from './solderRules.mjs';
 import { schematicMarkup, waveformPath } from './solderVisuals.mjs';
+import { analyzeCircuit, simulateCircuit } from './pedalCircuit.mjs';
 import './solder.css';
 import './solder-pedal.css';
 
@@ -33,8 +34,9 @@ export default class SolderPanel {
           <div><span class="solder-kicker">CUARTO DE MÁQUINAS · MESA DE ELECTRÓNICA</span><h2 id="solder-title">Armá un pedal de distorsión</h2></div>
           <button class="solder-close" type="button" aria-label="Cerrar juego de soldadura">×</button>
         </header>
-        <p class="solder-help">Circuito de recorte duro inspirado en pedales clásicos. Seguí la señal, colocá cada pieza y soldá sus pines en la zona verde. Los diodos van en sentidos opuestos: girá D2 antes de instalarlo.</p>
-        <div class="solder-schematic"><div class="solder-schematic-heading"><strong>ESQUEMA DE SEÑAL · 9 V</strong><span>R1, R2, R3, divisor VREF y LEVEL ya montados</span></div>${schematicMarkup()}<small class="solder-schematic-hint">Deslizá el esquema hacia un lado para ver la salida →</small></div>
+        <p class="solder-help">Circuito de recorte duro inspirado en pedales clásicos. Colocá las piezas, soldá en la zona verde y probá el pedal en cualquier momento para encontrar fallas. Los diodos van en sentidos opuestos: girá D2 antes de instalarlo.</p>
+        <div class="solder-schematic"><div class="solder-schematic-heading"><strong>ESQUEMA DE SEÑAL · 9 V</strong><span>R1, R2, R3, VREF y controles TONE / LEVEL ya montados</span></div>${schematicMarkup()}<small class="solder-schematic-hint">Deslizá el esquema hacia un lado para ver la salida →</small></div>
+        <div class="solder-checks" role="group" aria-label="Estado eléctrico de las etapas"></div>
         <div class="solder-stats"><span class="solder-progress-label"></span><span class="solder-mistakes"></span><span class="solder-time"></span><span class="solder-best"></span></div>
         <div class="solder-progress" role="progressbar" aria-label="Pines soldados" aria-valuemin="0" aria-valuemax="${TOTAL_PINS}"><span></span></div>
         <div class="solder-heat-console">
@@ -47,13 +49,14 @@ export default class SolderPanel {
         <div class="solder-board" role="group" aria-label="Placa de circuito">
           <div class="solder-board-top"><span>PCB · DISTORSIÓN / 9 V</span><span class="solder-board-light">● SEÑAL ABIERTA</span></div>
           <div class="solder-slots"></div>
-          <span class="solder-board-code">J1 → C1 → U1 + P1 → R3 → D1 ∥ D2 → C2 → C3 → LEVEL → J2</span>
+          <span class="solder-board-code">J1 → C1 → U1 + P1 → R3 → D1 ∥ D2 → P2/C2 → C3 → P3 LEVEL → J2</span>
         </div>
         <div class="solder-footer"><p class="solder-status" role="status" aria-live="polite"></p>
           <div class="solder-actions"><button class="solder-reset" type="button">↺ Nueva placa</button><button class="solder-test" type="button" disabled>Probar circuito →</button></div>
         </div>
         <div class="solder-scope" hidden>
-          <div class="solder-scope-title"><strong>OSCILOSCOPIO · SEÑAL DE PRUEBA</strong><span>Azul: guitarra limpia · ámbar: salida recortada</span></div>
+          <div class="solder-scope-title"><strong>OSCILOSCOPIO · SEÑAL DE PRUEBA</strong><span>Azul: guitarra limpia · ámbar: salida del circuito</span></div>
+          <p class="solder-scope-state"></p>
           <svg class="solder-wave" viewBox="0 0 845 112" role="img" aria-label="Comparación entre la señal limpia y la señal distorsionada"><path class="solder-wave-grid" d="M0 29H845M0 84H845M0 56H845"/><path class="solder-wave-clean"/><path class="solder-wave-dirty"/></svg>
           <div class="solder-controls"><label>DRIVE <input data-control="drive" type="range" min="0" max="100" value="72"><span data-value="drive">72%</span></label><label>TONO <input data-control="tone" type="range" min="0" max="100" value="54"><span data-value="tone">54%</span></label><label>LEVEL <input data-control="level" type="range" min="0" max="100" value="60"><span data-value="level">60%</span></label><button class="solder-audio" type="button">▶ Escuchar tono de prueba</button></div>
           <small>Simulación visual y tono sintetizado para escuchar el efecto; el circuito mostrado es educativo.</small>
@@ -103,6 +106,7 @@ export default class SolderPanel {
     this.stopHeating();
     this.placed = new Set();
     this.soldered = new Set();
+    this.orientations = new Map();
     this.selectedPart = null;
     this.flipped = false;
     this.mistakes = 0;
@@ -152,6 +156,7 @@ export default class SolderPanel {
       return;
     }
     this.placed.add(id);
+    if (part.stripe) this.orientations.set(id, this.flipped ? 'left' : 'right');
     this.selectedPart = null;
     this.flipped = false;
     this.setStatus(`${id} colocado. Tocá uno de sus pines para calentar el soldador.`);
@@ -243,11 +248,19 @@ export default class SolderPanel {
     const selected = PARTS.find(part => part.id === this.selectedPart);
     this.rotateButton.disabled = !selected?.stripe || this.won;
     this.rotateButton.textContent = selected?.stripe ? `↻ Girar ${selected.id} · banda ${this.flipped ? '◀' : '▶'}` : '↻ Girar diodo';
+    this.analysis = analyzeCircuit(this.placed, this.soldered, this.orientations);
     this.panel.classList.toggle('won', this.won);
-    this.root.querySelector('.solder-board-light').textContent = this.won ? '● SEÑAL ACTIVA' : '● SEÑAL ABIERTA';
-    this.testButton.disabled = !circuitComplete(this.placed, this.soldered) || this.won;
+    this.root.querySelector('.solder-board-light').textContent = this.won ? '● PEDAL LISTO' : this.analysis.signalPath ? '● SEÑAL EN J2' : '● SALIDA ABIERTA';
+    const checks = [
+      ['9 V', this.analysis.power], ['ENTRADA', this.analysis.input], ['GANANCIA', this.analysis.feedback],
+      ['CLIP +', this.analysis.clippingPositive], ['CLIP −', this.analysis.clippingNegative],
+      ['TONO', this.analysis.filter], ['SALIDA', this.analysis.output]
+    ];
+    this.root.querySelector('.solder-checks').innerHTML = checks.map(([name, active]) => `<span class="${active ? 'connected' : ''}">${active ? '●' : '○'} ${name}</span>`).join('');
+    this.testButton.disabled = this.won;
     this.testButton.textContent = this.won ? 'Pedal funcionando ✓' : 'Probar pedal →';
     this.renderStats();
+    if (!this.scope.hidden) this.updateScope();
   }
 
   renderStats() {
@@ -265,7 +278,14 @@ export default class SolderPanel {
   }
 
   testCircuit() {
-    if (!circuitComplete(this.placed, this.soldered) || this.won) return;
+    if (this.won) return;
+    this.analysis = analyzeCircuit(this.placed, this.soldered, this.orientations);
+    this.scope.hidden = false;
+    this.updateScope();
+    if (!this.analysis.ready) {
+      this.setStatus(this.analysis.diagnosis);
+      return;
+    }
     this.finalSeconds = Math.floor((performance.now() - this.startedAt) / 1000);
     const score = scoreFor(this.finalSeconds, this.mistakes);
     this.bestScore = Math.max(this.bestScore, score);
@@ -274,7 +294,6 @@ export default class SolderPanel {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ completed: true, bestScore: this.bestScore })); }
     catch { /* El resultado queda visible aunque no se pueda guardar. */ }
     this.render();
-    this.scope.hidden = false;
     this.updateScope();
     this.setStatus(`¡Pedal funcionando! La señal se recorta y se encendió el piloto de la mesa. ${score} puntos.`);
     this.onComplete();
@@ -288,17 +307,23 @@ export default class SolderPanel {
     for (const name of ['drive', 'tone', 'level']) {
       this.scope.querySelector(`[data-value="${name}"]`).textContent = `${Math.round(read(name) * 100)}%`;
     }
-    this.scope.querySelector('.solder-wave-clean').setAttribute('d', waveformPath(0, 1, false));
-    this.scope.querySelector('.solder-wave-dirty').setAttribute('d', waveformPath(drive, tone, true, level));
+    this.analysis = analyzeCircuit(this.placed, this.soldered, this.orientations);
+    const signal = simulateCircuit(this.analysis, { drive, tone, level });
+    this.scope.querySelector('.solder-wave-clean').setAttribute('d', waveformPath(signal.input, 29, 330));
+    this.scope.querySelector('.solder-wave-dirty').setAttribute('d', waveformPath(signal.output, 84, 46));
+    this.scope.querySelector('.solder-scope-state').textContent = this.analysis.diagnosis;
     if (this.audio) {
       const curve = new Float32Array(1024);
       for (let i = 0; i < curve.length; i++) {
         const x = i / (curve.length - 1) * 2 - 1;
-        curve[i] = Math.max(-.72, Math.min(.72, x * (1 + drive * 7))) / .72;
+        let amplified = Math.max(-3, Math.min(3, x * .055 * signal.gain));
+        if (this.analysis.clippingPositive) amplified = Math.min(.68, amplified);
+        if (this.analysis.clippingNegative) amplified = Math.max(-.68, amplified);
+        curve[i] = Math.max(-1, Math.min(1, amplified / .68));
       }
       this.audio.shaper.curve = curve;
-      this.audio.filter.frequency.value = 500 + tone * 4500;
-      this.audio.volume.gain.value = level * .09;
+      this.audio.filter.frequency.value = signal.cutoff;
+      this.audio.volume.gain.value = this.analysis.signalPath ? level * .09 : 0;
     }
   }
 

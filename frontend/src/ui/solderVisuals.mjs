@@ -11,10 +11,10 @@ export function schematicMarkup() {
     <g fill="#e4d6b7" font-family="monospace" font-size="11" font-weight="700">
       <text x="16" y="50">J1</text><text x="82" y="49">C1</text><text x="221" y="50">U1A</text>
       <text x="365" y="49">R3 · 10k</text><text x="446" y="49">D1</text><text x="495" y="49">D2</text>
-      <text x="572" y="49">C2</text><text x="645" y="49">C3</text><text x="798" y="49">J2</text>
+      <text x="558" y="49">P2/C2</text><text x="645" y="49">C3</text><text x="798" y="49">J2</text>
       <text x="261" y="15">P1 · DRIVE 500k</text><text x="240" y="119">R2 · 4k7</text><text x="331" y="94" fill="#a7d8bf">CLIP</text>
       <text x="192" y="145" fill="#9fd4c4">VREF = 4,5 V · divisor de 9 V preinstalado</text>
-      <text x="708" y="92" fill="#a7d8bf">LEVEL → AMPLI</text>
+      <text x="708" y="92" fill="#a7d8bf">P3 LEVEL → AMPLI</text>
     </g>
     <g class="schematic-symbol" fill="none" stroke="#f3deb2" stroke-width="2">
       <path d="M99 54V78M107 54V78"/><path d="M220 37L220 95L302 66Z"/><path d="M362 66l8 -7l8 14l8 -14l8 14l8 -14l8 7"/><path d="M232 100l-6 4l12 4l-12 4l12 4l-6 7"/>
@@ -26,16 +26,9 @@ export function schematicMarkup() {
   </svg>`;
 }
 
-export function waveformPath(drive, tone, clipped = true, level = 1) {
-  const points = [];
-  let smooth = 0;
-  for (let i = 0; i <= 180; i++) {
-    const phase = i / 180 * Math.PI * 7;
-    const input = Math.sin(phase) * .74 + Math.sin(phase * 3) * .1;
-    const raw = clipped ? Math.max(-.72, Math.min(.72, input * (1 + drive * 7))) : input;
-    smooth += (raw - smooth) * (clipped ? .08 + tone * .7 : 1);
-    const y = (clipped ? 84 : 29) - smooth * (clipped ? level : 1) * 23;
-    points.push(`${i === 0 ? 'M' : 'L'}${(i / 180 * 820 + 12).toFixed(1)} ${y.toFixed(1)}`);
-  }
-  return points.join('');
+export function waveformPath(values, center, pixelsPerVolt) {
+  return values.map((voltage, i) => {
+    const y = center - Math.max(-25, Math.min(25, voltage * pixelsPerVolt));
+    return `${i === 0 ? 'M' : 'L'}${(i / Math.max(1, values.length - 1) * 820 + 12).toFixed(1)} ${y.toFixed(1)}`;
+  }).join('');
 }
