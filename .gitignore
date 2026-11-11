@@ -10,4 +10,14 @@ node_modules/
 frontend/node_modules/
 frontend/dist/
 backend/target/
+fleet-api/bin/
+fleet-api/obj/
+fleet-api/data/
+fleet-web/bin/
+fleet-web/obj/
+fleet-web/publish/
+frontend/public/fleet/
+.dotnet/
+.dotnet-home/
+.dotnet-install.ps1
 tools/

@@ -1,0 +1,53 @@
+:root { font-family: Arial, sans-serif; color: #e7f5f6; background: #071b2b; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .5; }
+a { color: #8ee9e1; }
+.loading { padding: 30px; color: #9ec9cf; }
+.fleet-app { min-height: 100dvh; padding: clamp(18px, 3vw, 34px); background: linear-gradient(145deg, #102c3c, #071b2b 65%); }
+.fleet-header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+.eyebrow { color: #73e0d7; font-size: 11px; font-weight: 700; letter-spacing: .16em; }
+h1 { margin: 7px 0 5px; color: #fff; font-size: clamp(26px, 4vw, 36px); }
+.fleet-header p { margin: 0; color: #a8c7ce; font-size: 14px; }
+.back-link { white-space: nowrap; padding: 8px 0; font-size: 12px; text-decoration: none; }
+.back-link:hover { text-decoration: underline; }
+.storage-note { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 24px 0 20px; padding: 14px; border-radius: 10px; background: #0e3442; color: #b8d2d8; font-size: 12px; }
+.storage-note strong { color: #e7f5f6; }
+.storage-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-left: auto; }
+.storage-actions button { padding: 8px 10px; border: 1px solid #51818a; border-radius: 6px; background: #143d4c; color: #d7f1f2; font-size: 12px; }
+.import-button { display: flex; align-items: center; gap: 6px; }
+.import-button input { max-width: 185px; font-size: 11px; }
+.fleet-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fleet-tabs, .fleet-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.fleet-tabs button { padding: 9px 12px; border: 1px solid #406c77; border-radius: 7px; background: #113847; color: #c8e4e8; font-size: 13px; }
+.fleet-tabs button.active { background: #6ee7d4; color: #06303a; border-color: #6ee7d4; font-weight: 700; }
+.fleet-actions input { min-width: 175px; }
+input:not([type=file]), select, textarea { padding: 10px 11px; border: 1px solid #47717c; border-radius: 7px; background: #061d2b; color: white; }
+input::placeholder { color: #8faeb7; }
+.primary { padding: 10px 16px; border: 0; border-radius: 7px; background: #6ee7d4; color: #06303a; font-weight: 700; }
+.feedback { min-height: 18px; margin: 12px 0 8px; color: #94e3d9; font-size: 13px; }
+.feedback.error { color: #ffb1a7; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+th { padding: 11px 9px; border-bottom: 1px solid #45717b; color: #8eafb7; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
+td { padding: 13px 9px; border-bottom: 1px solid #264b56; white-space: nowrap; }
+td:nth-child(3) { min-width: 150px; white-space: normal; }
+.row-actions { white-space: nowrap; }
+.row-actions button { margin-right: 5px; padding: 6px 8px; border: 1px solid #51818a; border-radius: 5px; background: #143d4c; color: #d7f1f2; font-size: 12px; }
+.row-actions button.danger { border-color: #925c5b; color: #ffbab1; }
+.status.operativo { color: #79e8bd; } .status.mantenimiento { color: #ffd58e; } .status.inactivo { color: #c0c7cd; }
+.empty { padding: 30px 8px; color: #b1ccd1; text-align: center; font-size: 14px; }
+.fleet-form { margin-top: 22px; padding: 18px; border: 1px solid #3d7280; border-radius: 10px; background: #0b2d3b; }
+.form-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 15px; }
+.form-head h2 { margin: 0; font-size: 18px; }
+.quiet { border: 0; background: transparent; color: #a6d9df; text-decoration: underline; }
+.fields { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 13px; }
+.fields label { display: flex; flex-direction: column; gap: 6px; color: #b8d2d8; font-size: 12px; font-weight: 700; }
+.fields input, .fields select, .fields textarea { min-width: 0; }
+.notes { grid-column: 1 / -1; }
+.form-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+#blazor-error-ui { display: none; position: fixed; bottom: 0; width: 100%; padding: 12px; background: #852f35; color: white; }
+@media (max-width: 800px) { .fields { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 620px) { .fleet-header { flex-wrap: wrap; } .storage-actions { margin-left: 0; } .fleet-actions, .fleet-actions input { width: 100%; } .fleet-actions .primary { flex: 1; } .fields { grid-template-columns: 1fr; } }

@@ -1,5 +1,9 @@
 # 🎮 MARTIN95AM - Martin Quest
 
+## Flota internacional
+
+El botón **Flota internacional** abre un ABM de autos, embarcaciones y aviones hecho en Blazor WebAssembly (.NET 10). Se publica junto al juego en GitHub Pages, sin servidor adicional. Los registros quedan en cada navegador; se pueden exportar e importar como JSON para llevarlos a otro dispositivo. Ver [fleet-web/README.md](fleet-web/README.md).
+
 [![Jugar Ahora](https://img.shields.io/badge/🎮_JUGAR_AHORA-Click_Aquí-brightgreen?style=for-the-badge&logo=gamepad&logoColor=white)](https://martin95am.github.io/Martin95AM/)
 
 ---

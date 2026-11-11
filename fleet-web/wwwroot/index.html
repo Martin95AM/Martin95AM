@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestión de flota</title>
+    <base href="/Martin95AM/fleet/" />
+    <link rel="preload" id="webassembly" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <script type="importmap"></script>
+</head>
+<body>
+    <div id="app"><p class="loading">Cargando gestión de flota…</p></div>
+    <div id="blazor-error-ui">Ocurrió un error. <a href=".">Recargar</a></div>
+    <script>if (location.pathname.endsWith('/fleet/index.html')) history.replaceState(null, '', './');</script>
+    <script src="fleet-store.js"></script>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+</html>

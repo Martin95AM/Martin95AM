@@ -35,6 +35,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build static fleet app
+        run: |
+          dotnet publish fleet-web/fleet-web.csproj -c Release -o fleet-web/publish
+          mkdir -p frontend/public/fleet
+          cp -a fleet-web/publish/wwwroot/. frontend/public/fleet/
+
       - name: Test assistant, combat and weapon grip rules
         run: node --test assistant-worker/src/index.test.js frontend/src/combat/rules.test.mjs frontend/src/art/weapons.test.mjs frontend/src/ui/patchBayRules.test.mjs frontend/src/ui/voiceSelection.test.mjs
 

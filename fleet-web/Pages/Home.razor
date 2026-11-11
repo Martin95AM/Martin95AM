@@ -1,0 +1,91 @@
+@page "/"
+@page "/index.html"
+
+<PageTitle>Gestión de flota · Martín Quest</PageTitle>
+
+<div class="fleet-app">
+    <header class="fleet-header">
+        <div>
+            <span class="eyebrow">TRANSPORTISTA INTERNACIONAL</span>
+            <h1>Gestión de flota</h1>
+            <p>Autos, embarcaciones y aviones en un solo registro.</p>
+        </div>
+        <a class="back-link" href="/Martin95AM/" target="_top">← Volver al sitio</a>
+    </header>
+
+    <div class="storage-note">
+        <strong>Datos de este navegador</strong>
+        <span>Se guardan en este dispositivo. Exportá un archivo para conservarlos o llevarlos a otro.</span>
+        <div class="storage-actions">
+            <button type="button" @onclick="ExportAsync" disabled="@(items.Count == 0)">Exportar JSON</button>
+            <label class="import-button">Importar JSON <InputFile OnChange="ImportAsync" accept=".json,application/json" /></label>
+        </div>
+    </div>
+
+    <div class="fleet-toolbar">
+        <div class="fleet-tabs" aria-label="Filtrar por tipo">
+            <button type="button" class="@TabClass("todos")" @onclick="ShowAll">Todos</button>
+            <button type="button" class="@TabClass("auto")" @onclick="ShowAutos">Autos</button>
+            <button type="button" class="@TabClass("embarcacion")" @onclick="ShowEmbarcaciones">Embarcaciones</button>
+            <button type="button" class="@TabClass("avion")" @onclick="ShowAviones">Aviones</button>
+        </div>
+        <div class="fleet-actions">
+            <input type="search" aria-label="Buscar vehículos" placeholder="Buscar registro…" @bind="search" @bind:event="oninput" />
+            <button type="button" class="primary" @onclick="NewVehicle">+ Nuevo vehículo</button>
+        </div>
+    </div>
+
+    <p class="feedback @(feedbackError ? "error" : "")" role="status" aria-live="polite">@feedback</p>
+
+    @if (!loaded)
+    {
+        <p class="empty">Cargando flota…</p>
+    }
+    else if (!VisibleItems.Any())
+    {
+        <p class="empty">@(items.Count == 0 ? "Todavía no hay vehículos. Creá el primero." : "No hay vehículos que coincidan con la búsqueda.")</p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Tipo</th><th>Identificador</th><th>Vehículo</th><th>País</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    @foreach (var item in VisibleItems)
+                    {
+                        <tr>
+                            <td>@TypeLabel(item.Type)</td>
+                            <td>@item.Identifier</td>
+                            <td>@item.Manufacturer @item.Model · @item.Year</td>
+                            <td>@item.Country</td>
+                            <td class="status @item.Status">@StatusLabel(item.Status)</td>
+                            <td class="row-actions">
+                                <button type="button" @onclick="() => Edit(item)">Editar</button>
+                                <button type="button" class="danger" @onclick="() => DeleteAsync(item)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (showForm)
+    {
+        <form class="fleet-form" @onsubmit="SaveAsync" @onsubmit:preventDefault>
+            <div class="form-head"><h2>@(editingId is null ? "Nuevo vehículo" : "Editar vehículo")</h2><button type="button" class="quiet" @onclick="Cancel">Cancelar</button></div>
+            <div class="fields">
+                <label>Tipo<select @bind="draft.Type"><option value="auto">Auto</option><option value="embarcacion">Embarcación</option><option value="avion">Avión</option></select></label>
+                <label>@IdentifierLabel<input maxlength="40" required @bind="draft.Identifier" /></label>
+                <label>Fabricante<input maxlength="80" required @bind="draft.Manufacturer" /></label>
+                <label>Modelo<input maxlength="80" required @bind="draft.Model" /></label>
+                <label>Año<input type="number" min="1900" max="2100" required @bind="draft.Year" /></label>
+                <label>País de registro<input maxlength="80" required @bind="draft.Country" /></label>
+                <label>Estado<select @bind="draft.Status"><option value="operativo">Operativo</option><option value="mantenimiento">Mantenimiento</option><option value="inactivo">Inactivo</option></select></label>
+                <label>Capacidad de carga (kg)<input type="number" min="0" max="100000000" step="0.01" required @bind="draft.PayloadKg" /></label>
+                <label class="notes">Observaciones<textarea rows="2" maxlength="1000" @bind="draft.Notes"></textarea></label>
+            </div>
+            <div class="form-actions"><button type="submit" class="primary">Guardar vehículo</button></div>
+        </form>
+    }
+</div>
