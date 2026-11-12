@@ -342,14 +342,8 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     createDojoAtmosphere() {
-        const plaque = this.add.rectangle(320, 104, 106, 17, 0x25382f)
-            .setStrokeStyle(1, 0xd2ae72).setDepth(2);
-        this.add.text(320, 104, 'ACADEMIA MARTIN · 稽古', {
-            fontSize: '8px', color: '#ffe1a3', fontFamily: 'monospace'
-        }).setOrigin(0.5).setDepth(3);
         const lights = [64, 582].map(x => this.add.circle(x, 49, 15, 0xffd47a, 0.09).setDepth(2));
         this.tweens.add({ targets: lights, alpha: 0.17, scale: 1.12, duration: 1300, yoyo: true, repeat: -1 });
-        plaque.setAlpha(0.96);
     }
 
     createImperialRegalia() {
