@@ -22,7 +22,7 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.inputManager = new InputManager(this);
         this.assistantPanel = new AssistantPanel();
         this.solderPanel = new SolderPanel(() => this.lampGlow.setVisible(true));
-        this.marketPhonePanel = new MarketPhonePanel();
+        this.marketPhonePanel = new MarketPhonePanel(this.input.keyboard);
         this.lampGlow = this.add.circle(522, 103, 35, 0xffca69, 0.25)
             .setBlendMode(Phaser.BlendModes.ADD).setDepth(5).setVisible(this.solderPanel.completed);
 

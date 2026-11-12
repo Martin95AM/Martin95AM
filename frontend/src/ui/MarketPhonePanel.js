@@ -23,7 +23,8 @@ function histogram(svg, bars, key, color) {
 }
 
 export default class MarketPhonePanel {
-  constructor() {
+  constructor(keyboardPlugin) {
+    this.keyboardPlugin = keyboardPlugin;
     this.opened = false;
     this.selected = 'AAPL';
     this.cache = new Map();
@@ -298,6 +299,11 @@ export default class MarketPhonePanel {
 
   open() {
     if (this.opened) return;
+    // Phaser captures movement and interaction letters at the window level.
+    // Pause its manager so native text inputs can receive every character.
+    this.keyboardWasEnabled = this.keyboardPlugin.manager.enabled;
+    this.keyboardPlugin.resetKeys();
+    this.keyboardPlugin.manager.enabled = false;
     this.opened = true;
     this.root.hidden = false;
     this.root.querySelector('.market-close').focus();
@@ -307,6 +313,8 @@ export default class MarketPhonePanel {
 
   close() {
     if (!this.opened) return;
+    this.keyboardPlugin.manager.enabled = this.keyboardWasEnabled;
+    this.keyboardPlugin.resetKeys();
     this.opened = false;
     this.currentRequest = null;
     clearTimeout(this.searchTimer);
