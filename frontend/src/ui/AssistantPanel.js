@@ -2,7 +2,8 @@ import './assistant.css';
 import { isLikelyMaleVoice, pickSpanishVoice } from './voiceSelection.mjs';
 
 export default class AssistantPanel {
-    constructor() {
+    constructor(keyboardPlugin) {
+        this.keyboardPlugin = keyboardPlugin;
         this.opened = false;
         this.history = [];
         this.apiUrl = import.meta.env.VITE_ASSISTANT_API_URL || (import.meta.env.DEV
@@ -209,6 +210,10 @@ export default class AssistantPanel {
     }
 
     open() {
+        if (this.opened) return;
+        this.keyboardWasEnabled = this.keyboardPlugin.manager.enabled;
+        this.keyboardPlugin.resetKeys();
+        this.keyboardPlugin.manager.enabled = false;
         this.previousFocus = document.activeElement;
         this.opened = true;
         this.root.hidden = false;
@@ -216,6 +221,9 @@ export default class AssistantPanel {
     }
 
     close() {
+        if (!this.opened) return;
+        this.keyboardPlugin.manager.enabled = this.keyboardWasEnabled;
+        this.keyboardPlugin.resetKeys();
         this.opened = false;
         this.recognition?.abort();
         this.stopVoice();

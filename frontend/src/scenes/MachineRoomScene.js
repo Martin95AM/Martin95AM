@@ -20,7 +20,7 @@ export default class MachineRoomScene extends Phaser.Scene {
         this.cameras.main.setZoom(2);
         this.cameras.main.setBackgroundColor('#061323');
         this.inputManager = new InputManager(this);
-        this.assistantPanel = new AssistantPanel();
+        this.assistantPanel = new AssistantPanel(this.input.keyboard);
         this.solderPanel = new SolderPanel(() => this.lampGlow.setVisible(true));
         this.marketPhonePanel = new MarketPhonePanel(this.input.keyboard);
         this.lampGlow = this.add.circle(522, 103, 35, 0xffca69, 0.25)
